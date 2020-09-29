@@ -17,10 +17,9 @@
 #   if -verbose_onefile exists, -relaxed <drop threshold> can be used to relax the output calculations
 
 from math import inf
-from sys  import argv
 
 class InvalidParameterError(Exception):
-    def __init__(self, flag : str, value : str, description : str):
+    def __init__(self, flag, value, description : str):
         self.flag = flag
         self.val  = value
         self.desc = description
@@ -43,28 +42,44 @@ class InvalidFormatException(Exception):
         self.desc = description
 
     def __str__(self):
-        return f"Didn't find {self.args_404}. Description: {self.desc}"
+        formatted_args_404 = ""
+
+        index = 0
+        for arg in self.args_404:
+            formatted_args_404 += arg
+            index += 1
+
+            if index < len(self.args_404):
+                formatted_args_404 += ","
+
+        return f"Didn't find {formatted_args_404}. Description: {self.desc}"
 
 class CMDHandler:
+
     VALID_FLAGS = ["-I", "-L", "-T", "-SNIFF", "-F",
                    "-SAVE", "-O", "-CSV", "-PDF",
-                   "-ONEFILE", "-VERBOSE_ONEFILE", "-RELAXED"]
+                   "-ONEFILE", "-VERBOSE_ONEFILE", "-RELAXED", "-KALM"]
     SAVE_FOUND = False
+    OUTPUT_FOUND = False
 
     SPECIAL_OUTPUT_FLAGS = ["-CSV", "-PDF", "-GRAPH"]
     FOUND_SPECIAL_FLAGS = [False for _ in SPECIAL_OUTPUT_FLAGS]
 
     ONE_FILE_OUTPUT_FLAGS = ["-ONEFILE", "-VERBOSE_ONEFILE"]
-    FOUND_ONE_FILE_OUTPUT_FLAGS_FLAGS = [False for _ in ONE_FILE_OUTPUT_FLAGS]
+    FOUND_ONE_FILE_OUTPUT_FLAGS = [False for _ in ONE_FILE_OUTPUT_FLAGS]
 
     def __init__(self):
-        self.INTERFACE = None
+        self.INTERFACE_IPV4 = None
+        self.INTERFACE_READABLE = None
+
         self.LOOP_TIMES = inf
         self.SLEEP_TIME = 1
         self.OUTPUT_PATH = None
         self.IP_FILTER = None
+        self.SAVE_STARTDATE = None
+        self.SAVE_ENDDATE = None
+
         self.SNIFF_FLAG = False
-        self.SAVE_FLAG = False
         self.CSV_FLAG = False
         self.PDF_FLAG = False
         self.GRAPH_FLAG = False
@@ -73,9 +88,10 @@ class CMDHandler:
         self.VERBOSE_ONEFILE_FLAG = False
         self.DROP_THRESHOLD = 1
 
+        self.exceptions = []
 
-    def argHasValue(self, arg : str, arg_index : int , argl : list,
-                    offset : int = 1, type_check : type = None, val_check = None):
+    def arg_has_value(self, arg : str, arg_index : int, argl : list,
+                      offset : int = 1, type_check : type = None, val_check = None):
         if arg_index + offset < len(argl):
             val = argl[arg_index + offset]
             if type_check is not None:
@@ -97,17 +113,16 @@ class CMDHandler:
                                                                            f"{arg_index + offset} but found "
                                                                            f"end of list")
 
-    def argIsCommaSeparatedList(self, arg : str, length : int):
+    def arg_is_comma_separated_list(self, arg : str, length : int):
         if len(arg.split(",")) != length:
             raise InvalidValueError(None, arg, f"Wanted comma separated list of "
                                                f"length {length} got {len(arg.split(','))}")
         return True
 
-    def parseSysArgs(self):
-        argv_len = len(argv)
+    def parse_sys_args(self, argv : list):
 
         index = 0
-        args_skip = 0
+        args_skip = 1 #skip the first argument because it's the script path lulw
         for arg in argv:
             if args_skip > 0:
                 args_skip -= 1
@@ -121,57 +136,144 @@ class CMDHandler:
                 raise InvalidFlagError(arg, None, f"Encountered non valid flag {arg}.")
 
             if upper_arg == "-I":
-                if self.argHasValue(arg, index, argv):
-                    self.INTERFACE = arg[index + 1]
+                if self.arg_has_value(arg, index, argv):
+                    self.INTERFACE_IPV4 = argv[index + 1]
                     args_skip += 1
 
             if upper_arg == "-L":
-                if self.argHasValue(arg, index, argv, type_check = int):
-                    self.LOOP_TIMES = int(arg[index + 1])
+                if self.arg_has_value(arg, index, argv, type_check = int):
+                    self.LOOP_TIMES = int(argv[index + 1])
                     args_skip += 1
 
             if upper_arg == "-T":
-                if self.argHasValue(arg, index, argv, type_check = float):
-                    self.SLEEP_TIME = float(arg[index + 1])
+                if self.arg_has_value(arg, index, argv, type_check = float):
+                    self.SLEEP_TIME = float(argv[index + 1])
                     args_skip += 1
 
             if upper_arg == "-SNIFF":
                 self.SNIFF_FLAG = True
 
             if upper_arg == "-F":
-                if self.argHasValue(arg, index, argv):
-                    self.IP_FILTER = arg[index + 1]
+                if self.arg_has_value(arg, index, argv):
+                    self.IP_FILTER = argv[index + 1]
                     args_skip += 1
 
             if upper_arg == "-SAVE":
-                #if arg has value
+                #if arg has value ... do stuff
+                argHasStartEndDate = self.arg_has_value(arg, index, argv, offset = 2, type_check=str) and \
+                                     self.arg_has_value(arg, index, argv, offset=1, type_check=str)
+
+                argHasCorrectFormatting = self.arg_is_comma_separated_list(argv[index + 1], 6) and \
+                                          self.arg_is_comma_separated_list(argv[index + 2], 6)
+
+                if argHasStartEndDate and argHasCorrectFormatting:
+                    self.SAVE_STARTDATE = argv[index + 1].split(",")
+                    self.SAVE_ENDDATE = argv[index + 2].split(",")
+
                 CMDHandler.SAVE_FOUND = True
-                args_skip += 1
+                args_skip += 2
 
             if upper_arg == "-O":
-                #if arg has value
+                #if arg has value... do stuff
+                if self.arg_has_value(arg, index, argv, type_check=str):
+                    self.OUTPUT_PATH = argv[index + 1]
+
+                #misc
+                CMDHandler.OUTPUT_FOUND = True
                 args_skip += 1
 
             if upper_arg == "-CSV":
-                pass
+                self.CSV_FLAG = True
+                CMDHandler.FOUND_SPECIAL_FLAGS[0] = True
 
             if upper_arg == "-PDF":
-                pass
+                self.PDF_FLAG = True
+                CMDHandler.FOUND_SPECIAL_FLAGS[1] = True
 
             if upper_arg == "-GRAPH":
-                pass
+                self.GRAPH_FLAG = True
+                CMDHandler.FOUND_SPECIAL_FLAGS[2] = True
 
             if upper_arg == "-ONEFILE":
-                pass
+                self.ONEFILE_FLAG = True
+                CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[0] = True
 
             if upper_arg == "-VERBOSE_ONEFILE":
-                pass
+                self.VERBOSE_ONEFILE_FLAG = True
+                CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[1] = True
 
             if upper_arg == "-RELAXED":
+                # if arg has value... do stuff
+                if self.arg_has_value(arg, index, argv, type_check=int):
+                    self.DROP_THRESHOLD = int(argv[index + 1])
+
+                # misc
                 args_skip += 1
 
-        index += 1
+            if upper_arg == "-KALM":
+                self.DROP_THRESHOLD = 10000
 
-    #if -save flag was found, then -o flag must have been found, as well as either -CSV, -PDF, -GRAPH,
-    # (-onefile OR -verbose_onefile).
-    # If -relaxed was found, -verbose_onefile must've been found as well.
+
+            index += 1
+
+    def post_processing(self, ips : list):
+
+        if not CMDHandler.SAVE_FOUND and CMDHandler.OUTPUT_FOUND:
+            self.exceptions.append(InvalidFormatException(["-save"], "If -o <save path> flag is specified, "
+                                                  "-save <STARTDATE YYYY,MM,DD,HH,MM,SS> <ENDDATE YYYY,MM,DD,HH,MM,SS> "
+                                                  "must also be specified."))
+
+        if CMDHandler.SAVE_FOUND and not CMDHandler.OUTPUT_FOUND:
+            self.exceptions.append(InvalidFormatException(["-o"], "If -save flag is specified, "
+                                                             "-o <save path> must also be specified."))
+
+        out_specifier_found = True in CMDHandler.FOUND_SPECIAL_FLAGS or True in CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS
+        if CMDHandler.SAVE_FOUND and CMDHandler.OUTPUT_FOUND and not out_specifier_found:
+            self.exceptions.append(InvalidFormatException(["an output specifier."], "An output specifier must be present"
+                                                                               " to specify in what format the output "
+                                                                               "will be in. Valid flags are: "
+                                                                               "-csv, -pdf, -graph, -onefile, "
+                                                                               "-verbose_onefile ."))
+
+        if self.INTERFACE_IPV4 is None:
+            self.exceptions.append(InvalidFormatException(["-i <interface ipv4>"], "-i argument is required and should "
+                                                                              "always be present, with a valid ipv4 "
+                                                                              "address corresponding to an interface."))
+
+        if self.INTERFACE_IPV4 is not None:
+            found = False
+
+            index = 0
+            for ip in ips[1]:
+                if self.INTERFACE_IPV4 == ip:
+                    found = True
+                    self.INTERFACE_READABLE = ips[0][index]
+
+                index += 1
+
+            if not found:
+                self.exceptions.append(InvalidFormatException(["valid ipv4 address"], "A valid IPV4 address must be "
+                                                                                  "specified. The one currently "
+                                                                                  "provided doesn't match any "
+                                                                                  "ip on the system. Valid IPV4s are: "
+                                                                                  f"{ips[1]}"))
+        if self.SLEEP_TIME < 0:
+            self.exceptions.append(InvalidFormatException(["positive sleep time"], "A valid sleep time must be specified. "
+                                                                            "The sleep time must be a positive "
+                                                                            "floating point or integer number."))
+
+        if self.LOOP_TIMES != inf and self.LOOP_TIMES < 0:
+            self.exceptions.append(InvalidFormatException(["positive loop number"], "A valid loop number must be specified. "
+                                                                               "The loop time argument must be a "
+                                                                               "positive integer."))
+
+        if self.DROP_THRESHOLD < 0:
+            self.exceptions.append(InvalidFormatException(["positive drop threshold"], "A valid drop threshold must be "
+                                                                                 "specified. The threshold must be "
+                                                                                 "a positive integer."))
+
+        if self.DROP_THRESHOLD != 1 and not self.VERBOSE_ONEFILE_FLAG:
+            self.exceptions.append(InvalidFormatException(["-verbose_onefile"], "Relaxed threshold is specified, but "
+                                                                           "-verbose_onefile is not specified. "
+                                                                           "Without the verbose onefile flag, the "
+                                                                           "argument has no effect."))
