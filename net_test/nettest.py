@@ -42,6 +42,12 @@ class StabilityTester:
                 break
             self.loop_servers()
 
+    def ping_with_event_counter(self, evt : Event, c):
+        for i in range(c):
+            if evt.is_set():
+                break
+            self.loop_servers()
+
     def loop_servers(self):
         tts = StabilityTester.SLEEP_TIME
 

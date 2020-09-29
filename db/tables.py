@@ -21,8 +21,8 @@ class Packet(Model):
     size = IntegerField()
 
     sender = TextField()
-    sender_readable = TextField()
     receiver = TextField()
+    interface_used = TextField()
 
     datetime = TimestampField(resolution=1e3) #ms
 

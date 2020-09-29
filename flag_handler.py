@@ -1,22 +1,11 @@
 # Flags:
-# -i <interface ip> -l <loop times> -t <sleep time>
-# -o <output path> -f <comma separated ips>, -sniff
+# -i <interface ip> -l <loop times> -t <sleep time> -c <packet count>
+# -o <output path> -f <comma separated ips> -sniff
 # -save <startdate, in YYYY,MM,DD,HH,MM,SS> <enddate, in YYYY,MM,DD,HH,MM,SS>
-# -csv, -pdf, -graph, -onefile, -verbose_onefile
-#                               -relaxed <drop threshold>
-
-# if the interface flag doesn't exist, the program will prompt the user to select
-
-# if save flag exists, the program will only output data file
-# and it will not run. if the save flag exists,
-# the -o flag must also be present, specifying an absolute save path
-# If save flag exists, at least one of the output specifier flags must exist:
-#   -csv, -pdf, -graph
-# if -onefile exists, a pdf will be outputted with some data, and a graph for the datetime specified
-# if -verbose_onefile exists, a pdf will be outputted with the data explained in detail, for the datetime specified
-#   if -verbose_onefile exists, -relaxed <drop threshold> can be used to relax the output calculations
+# -csv, -pdf, -graph, -onefile, -verbose_onefile -relaxed <drop threshold>
 
 from math import inf
+from datetime import datetime
 
 class InvalidParameterError(Exception):
     def __init__(self, flag, value, description : str):
@@ -25,7 +14,7 @@ class InvalidParameterError(Exception):
         self.desc = description
 
     def __str__(self):
-        return f"Invalid parameter {self.flag}, with value {self.val}. Description: {self.desc}"
+        return f"Invalid parameter {self.flag}, with value {self.val}.\nDescription: {self.desc}"
 
 class InvalidFlagError(InvalidParameterError):
     pass
@@ -52,12 +41,12 @@ class InvalidFormatException(Exception):
             if index < len(self.args_404):
                 formatted_args_404 += ","
 
-        return f"Didn't find {formatted_args_404}. Description: {self.desc}"
+        return f"Didn't find {formatted_args_404}.\nDescription: {self.desc}"
 
 class CMDHandler:
 
-    VALID_FLAGS = ["-I", "-L", "-T", "-SNIFF", "-F",
-                   "-SAVE", "-O", "-CSV", "-PDF",
+    VALID_FLAGS = ["-I", "-L", "-T", "-SNIFF", "-F", "-C",
+                   "-SAVE", "-O", "-CSV", "-PDF", "-GRAPH",
                    "-ONEFILE", "-VERBOSE_ONEFILE", "-RELAXED", "-KALM"]
     SAVE_FOUND = False
     OUTPUT_FOUND = False
@@ -72,6 +61,7 @@ class CMDHandler:
         self.INTERFACE_IPV4 = None
         self.INTERFACE_READABLE = None
 
+        self.PACKET_COUNT = inf
         self.LOOP_TIMES = inf
         self.SLEEP_TIME = 1
         self.OUTPUT_PATH = None
@@ -155,7 +145,12 @@ class CMDHandler:
 
             if upper_arg == "-F":
                 if self.arg_has_value(arg, index, argv):
-                    self.IP_FILTER = argv[index + 1]
+                    self.IP_FILTER = argv[index + 1].split(",")
+                    args_skip += 1
+
+            if upper_arg == "-C":
+                if self.arg_has_value(arg, index, argv, type_check=int):
+                    self.PACKET_COUNT = int(argv[index + 1])
                     args_skip += 1
 
             if upper_arg == "-SAVE":
@@ -228,12 +223,51 @@ class CMDHandler:
                                                              "-o <save path> must also be specified."))
 
         out_specifier_found = True in CMDHandler.FOUND_SPECIAL_FLAGS or True in CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS
+
         if CMDHandler.SAVE_FOUND and CMDHandler.OUTPUT_FOUND and not out_specifier_found:
-            self.exceptions.append(InvalidFormatException(["an output specifier."], "An output specifier must be present"
+            self.exceptions.append(InvalidFormatException(["an output specifier"], "An output specifier must be present"
                                                                                " to specify in what format the output "
                                                                                "will be in. Valid flags are: "
                                                                                "-csv, -pdf, -graph, -onefile, "
                                                                                "-verbose_onefile ."))
+
+        if self.SAVE_STARTDATE is not None and self.SAVE_ENDDATE is not None:
+            try:
+                startdate = datetime(
+                    int(self.SAVE_STARTDATE[0]),
+                    int(self.SAVE_STARTDATE[1]),
+                    int(self.SAVE_STARTDATE[2]),
+                    int(self.SAVE_STARTDATE[3]),
+                    int(self.SAVE_STARTDATE[4]),
+                    int(self.SAVE_STARTDATE[5]),
+                    000
+                )
+
+                enddate = datetime(
+                    int(self.SAVE_ENDDATE[0]),
+                    int(self.SAVE_ENDDATE[1]),
+                    int(self.SAVE_ENDDATE[2]),
+                    int(self.SAVE_ENDDATE[3]),
+                    int(self.SAVE_ENDDATE[4]),
+                    int(self.SAVE_ENDDATE[5]),
+                    000
+                )
+
+                self.SAVE_STARTDATE = startdate
+                self.SAVE_ENDDATE = enddate
+
+            except Exception as e:
+                self.exceptions.append(e)
+
+        if out_specifier_found and not CMDHandler.SAVE_FOUND and CMDHandler.OUTPUT_FOUND:
+            self.exceptions.append(InvalidFormatException(
+                ["-save <STARDATE YYYY,MM,DD,HH,MM,SS> <ENDDATE YYYY,MM,DD,HH,MM,SS","-o <save path>"],
+                "An output specifier must be present"
+                " to specify in what format the output "
+                "will be in. Valid flags are: "
+                "-csv, -pdf, -graph, -onefile, "
+                "-verbose_onefile .")
+            )
 
         if self.INTERFACE_IPV4 is None:
             self.exceptions.append(InvalidFormatException(["-i <interface ipv4>"], "-i argument is required and should "
@@ -257,6 +291,7 @@ class CMDHandler:
                                                                                   "provided doesn't match any "
                                                                                   "ip on the system. Valid IPV4s are: "
                                                                                   f"{ips[1]}"))
+
         if self.SLEEP_TIME < 0:
             self.exceptions.append(InvalidFormatException(["positive sleep time"], "A valid sleep time must be specified. "
                                                                             "The sleep time must be a positive "
@@ -272,8 +307,14 @@ class CMDHandler:
                                                                                  "specified. The threshold must be "
                                                                                  "a positive integer."))
 
+        if self.PACKET_COUNT != inf and self.PACKET_COUNT < 0:
+            self.exceptions.append(InvalidFormatException(["positive packet count"], "A valid packet count must be "
+                                                                                 "specified. The count must be "
+                                                                                 "a positive integer."))
+
         if self.DROP_THRESHOLD != 1 and not self.VERBOSE_ONEFILE_FLAG:
             self.exceptions.append(InvalidFormatException(["-verbose_onefile"], "Relaxed threshold is specified, but "
                                                                            "-verbose_onefile is not specified. "
                                                                            "Without the verbose onefile flag, the "
                                                                            "argument has no effect."))
+

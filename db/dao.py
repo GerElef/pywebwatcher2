@@ -26,6 +26,6 @@ class Dao:
                             datetime = datetime.datetime.now(datetime.timezone.utc)))
 
     #refactor this, should probably take less args
-    def save_packet(self, se : str, ser : str, r : str, si : int):
-        self.save(Packet(sender=se,  sender_readable=ser, receiver=r, size=si,
+    def save_packet(self, se : str, r : str, iface : str, si : int):
+        self.save(Packet(sender=se, receiver=r, interface_used=iface, size=si,
                          datetime = datetime.datetime.now(datetime.timezone.utc)))
