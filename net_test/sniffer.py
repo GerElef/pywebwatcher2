@@ -7,6 +7,9 @@ from db.dao import Dao
 
 # https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
 class Sniffer:
+    #TODO add IP filter from args
+    IP_FILTER = None
+
     def __init__(self, interface, readable_interface, evt, packet_count = inf):
         self.interface = interface
         self.readable_interface = readable_interface
