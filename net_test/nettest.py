@@ -53,27 +53,26 @@ class StabilityTester:
 
         for i in range(len(self.servers)):
             try:
-                ms = ping(self.servers[i])
-                int_ms = int(ms * 1000)
-                r_ms = round(ms,3)
+                ms = int(self.ping_server(self.servers[i]))
+                ping_in_s = ms/1000
 
-                time_left = tts - r_ms if r_ms < tts else 0
+                time_left = tts - ping_in_s if ping_in_s < tts else 0
 
-                self.db.timestamp(int_ms, StabilityTester.UPPER_LIMIT,
-                                  self.servers, self.servers_readable,
+                self.db.timestamp(ms, StabilityTester.UPPER_LIMIT,
+                                  self.servers[i], self.servers_readable[i],
                                   self.interface)
 
                 print(f"Server Name: {self.servers_readable[i]}\n"
-                      f"\t\tReplied in: {int_ms}ms\n"
-                      f"\t\tPing Variation: {int_ms - self.local_history[i]}ms")
+                      f"\tReplied in: {ms}ms\n"
+                      f"\tPing Variation: {ms - self.local_history[i]}ms")
 
-                self.local_history[i] = int_ms
+                self.local_history[i] = ms
 
                 sleep(time_left)
 
             except Timeout:
                 self.db.timestamp(0, StabilityTester.UPPER_LIMIT,
-                                  self.servers, self.servers_readable,
+                                  self.servers[i], self.servers_readable[i],
                                   self.interface, True)
 
                 print(f"Server Name: {self.servers_readable[i]}\n"
@@ -81,16 +80,18 @@ class StabilityTester:
 
             except PingError as pe:
                 print(f"Encountered unexpected PingError {pe} when pinging {self.servers_readable[i]}")
-            except Exception as e:
-                print(f"Encountered unexpected generic exception {e}")
+            except Exception:
+                #silently pass if our adapter dies or something, we do not care
+                pass
 
 
-    def ping(self, server : str):
-        #timeout should be in seconds, not milliseconds
-        timeout = int(StabilityTester.UPPER_LIMIT / 1000)
-
-        return ping(server, interface = self.interface, unit = 'ms', timeout = timeout)
+    def ping_server(self, server : str):
+        return ping(server, src_addr = self.interface, unit = 'ms', timeout = StabilityTester.SLEEP_TIME)
 
 
 class ServerHostNameMismatchException(Exception):
     pass
+
+if __name__ == "__main__":
+    pass
+

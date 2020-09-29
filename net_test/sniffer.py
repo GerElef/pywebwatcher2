@@ -21,10 +21,10 @@ class Sniffer:
     def start_sniffing(self):
         if self.max_packets == inf:
             sniff(filter="ip", prn=self.process_packet, iface=self.interface,
-                  stop_filter = lambda x: self.evt.is_set())
+                  stop_filter = lambda x: self.evt.is_set(), store = 0)
         else:
             sniff(filter="ip", prn=self.process_packet, count=self.max_packets, iface=self.interface,
-                  stop_filter = lambda x: self.evt.is_set())
+                  stop_filter = lambda x: self.evt.is_set(), store = 0)
 
     #https://thepacketgeek.com/scapy/sniffing-custom-actions/part-1/
     def process_packet(self, packet):

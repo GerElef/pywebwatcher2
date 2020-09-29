@@ -34,13 +34,14 @@ def start_sniffer(iface, ifaceipv4, evt, count):
     sniffer = Sniffer(iface, ifaceipv4, evt, packet_count = count)
     Thread(target=sniffer.start_sniffing).start()
 
-#TODO add exporter and join CMD args
+#TODO add exporter and finalize joining of CMD args
 
 if __name__ == '__main__':
     handler = CMDHandler()
     handler.parse_sys_args(argv)
     handler.post_processing(get_interfaces())
 
+    StabilityTester.UPPER_LIMIT = int(handler.SLEEP_TIME * 1000)
     StabilityTester.SLEEP_TIME = handler.SLEEP_TIME
 
     #if we encounter any exceptions, bail
