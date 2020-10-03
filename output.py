@@ -1,7 +1,5 @@
 import collections
 from time import time
-#TODO generator for 1000 db lines each time so we don't blow up the memory
-
 #TODO pdf
 
 #TODO graph with vaex
