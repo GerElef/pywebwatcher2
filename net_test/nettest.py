@@ -84,7 +84,6 @@ class StabilityTester:
                 #silently pass if our adapter dies or something, we do not care
                 pass
 
-
     def ping_server(self, server : str):
         return ping(server, src_addr = self.interface, unit = 'ms', timeout = StabilityTester.SLEEP_TIME)
 

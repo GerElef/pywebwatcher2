@@ -8,7 +8,7 @@ from db.dao import Dao
 # https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
 class Sniffer:
     #TODO add IP filter from args
-    IP_FILTER = None
+    IP_FILTER : list = None
 
     def __init__(self, interface, readable_interface, evt, packet_count = inf):
         self.interface = interface
@@ -28,6 +28,11 @@ class Sniffer:
 
     #https://thepacketgeek.com/scapy/sniffing-custom-actions/part-1/
     def process_packet(self, packet):
+        if Sniffer.IP_FILTER is not None:
+            #if
+            if not (packet[0][1].src in Sniffer.IP_FILTER or packet[0][1].dst in Sniffer.IP_FILTER):
+                return
+
         self.db.save_packet(packet[0][1].src, packet[0][1].dst, self.readable_interface, packet[0][1].len)
 
     #use column 0 for arguments to sniff with scapy i think

@@ -1,14 +1,16 @@
+import datetime
 from math import inf
 from threading import Thread, Event
 
+from db.dao import Dao
 from flag_handler import CMDHandler
 from sys import argv
 from net_test.nettest import StabilityTester
 from net_test.sniffer import Sniffer
 from time import sleep
 
-def start_sniffing():
-    pass
+from output import Generator
+
 
 def get_interfaces():
     ifaces = Sniffer.get_interface_list()
@@ -22,6 +24,12 @@ def get_interfaces():
         interfaces[1].append(ifaces[3][i])
 
     return interfaces
+
+def get_record_count(dao, date, record_type):
+    # e.g. if YYYY was given,
+    count = dao.get_number_of_records_in(date, record_type)
+    return count
+
 
 def start_tester(iface, evt, loop_times):
     tester = StabilityTester(iface)
@@ -41,21 +49,78 @@ if __name__ == '__main__':
     handler.parse_sys_args(argv)
     handler.post_processing(get_interfaces())
 
-    StabilityTester.UPPER_LIMIT = int(handler.SLEEP_TIME * 1000)
-    StabilityTester.SLEEP_TIME = handler.SLEEP_TIME
-
     #if we encounter any exceptions, bail
     if handler.exceptions:
         for e in handler.exceptions:
             print(e.__str__() + "\n")
+        exit(0)
 
+    if handler.RECORDS_FLAG:
+        #if we found records flag, for each MM/DD/HH/MM/SS (depending on if YYYY/MM/DD/HH/MM was given),
+        # print number of unique records and then exit
+        print(f"Found {get_record_count(Dao(), handler.RECORDS_DATE, handler.RECORDS_TYPE)} "
+              f"records in the given date.")
         exit(0)
 
     if handler.SAVE_FOUND:
         #do stuff for output here
+        generator = Generator()
+        generator.start_new_pass(handler.OUTPUT_PATH)
+        d = Dao()
+
+        if handler.CSV_FLAG:
+            #generate csv
+            print("Generating CSV...")
+            generator.generate_timestamp_csv(
+                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+            )
+            #TODO add packet dump
+            print("Done generating CSV!")
+
+        if handler.PDF_FLAG:
+            #generate pdf
+            print("Generating PDF...")
+            generator.generate_timestamp_pdf(
+                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+            )
+            #TODO add packet dump
+            print("Done generating PDF!")
+
+        if handler.GRAPH_FLAG:
+            #generate graph
+            print("Generating graph...")
+            generator.generate_timestamp_graph(
+                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+            )
+            # TODO add packet dump
+            print("Done generating graph!")
+
+        if handler.ONEFILE_FLAG:
+            #generate non-descriptive onefile with graph
+            print("Generating onefile...")
+            generator.generate_onefile(
+                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+            )
+            # TODO add packet dump
+            print("Done generating onefile!")
+
+        if handler.VERBOSE_ONEFILE_FLAG:
+            #generate descriptive onefile with graph
+            print("Generating verbose onefile...")
+            generator.generate_onefile_verbose(
+                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
+                handler.DROP_THRESHOLD
+            )
+            # TODO add packet dump
+            print("Done generating verbose onefile!")
 
         #then exit
         exit(0)
+
+    StabilityTester.UPPER_LIMIT = int(handler.SLEEP_TIME * 1000)
+    StabilityTester.SLEEP_TIME = handler.SLEEP_TIME
+
+    Sniffer.IP_FILTER = handler.IP_FILTER
 
     tester_event = Event()
     start_tester(handler.INTERFACE_IPV4, tester_event, handler.LOOP_TIMES)

@@ -1,11 +1,10 @@
 # Flags:
 # -i <interface ip> -l <loop times> -t <sleep time> -c <packet count>
-# -o <output path> -f <comma separated ips> -sniff
+# -o <output path> -f <comma separated ips> -sniff -records <YYYY,MM,DD,HH,MM>
 # -save <startdate, in YYYY,MM,DD,HH,MM,SS> <enddate, in YYYY,MM,DD,HH,MM,SS>
 # -csv, -pdf, -graph, -onefile, -verbose_onefile -relaxed <drop threshold>
-
 from math import inf
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class InvalidParameterError(Exception):
     def __init__(self, flag, value, description : str):
@@ -44,17 +43,37 @@ class InvalidFormatException(Exception):
         return f"Didn't find {formatted_args_404}.\nDescription: {self.desc}"
 
 class CMDHandler:
+    INTERFACE_TO_USE_ARG = "-I"
+    LOOP_TIMES_ARG = "-L"
+    SLEEP_TIME_ARG = "-T"
+    SNIFF_ARG = "-SNIFF"
+    IP_FORMAT_ARG = "-F"
+    PACKET_COUNT_ARG = "-C"
+    RECORDS_ARG = "-RECORDS"
+    SAVE_FLAG_ARG = "-SAVE"
+    OUTPUT_PATH_ARG = "-O"
+    CSV_OUT_ARG = "-CSV"
+    PDF_OUT_ARG = "-PDF"
+    GRAPH_OUT_ARG = "-GRAPH"
+    ONEFILE_OUT_ARG = "-ONEFILE"
+    VERBOSE_ONEFILE_OUT_ARG = "-VERBOSE_ONEFILE"
+    RELAXED_ARG = "-RELAXED"
+    KALM_ARG = "-KALM"
 
-    VALID_FLAGS = ["-I", "-L", "-T", "-SNIFF", "-F", "-C",
-                   "-SAVE", "-O", "-CSV", "-PDF", "-GRAPH",
-                   "-ONEFILE", "-VERBOSE_ONEFILE", "-RELAXED", "-KALM"]
-    SAVE_FOUND = False
-    OUTPUT_FOUND = False
+    RECORDS_ARG_TYPE_YEAR_MAGIC_CONSTANT   = 1
+    RECORDS_ARG_TYPE_MONTH_MAGIC_CONSTANT  = 2
+    RECORDS_ARG_TYPE_DAY_MAGIC_CONSTANT    = 3
+    RECORDS_ARG_TYPE_HOUR_MAGIC_CONSTANT   = 4
+    RECORDS_ARG_TYPE_MINUTE_MAGIC_CONSTANT = 5
 
-    SPECIAL_OUTPUT_FLAGS = ["-CSV", "-PDF", "-GRAPH"]
+    VALID_FLAGS = [INTERFACE_TO_USE_ARG, LOOP_TIMES_ARG, SLEEP_TIME_ARG, SNIFF_ARG, IP_FORMAT_ARG, PACKET_COUNT_ARG,
+                   SAVE_FLAG_ARG, OUTPUT_PATH_ARG, CSV_OUT_ARG, PDF_OUT_ARG, GRAPH_OUT_ARG, RECORDS_ARG,
+                   ONEFILE_OUT_ARG, VERBOSE_ONEFILE_OUT_ARG, RELAXED_ARG, KALM_ARG]
+
+    SPECIAL_OUTPUT_FLAGS = [CSV_OUT_ARG, PDF_OUT_ARG, GRAPH_OUT_ARG]
     FOUND_SPECIAL_FLAGS = [False for _ in SPECIAL_OUTPUT_FLAGS]
 
-    ONE_FILE_OUTPUT_FLAGS = ["-ONEFILE", "-VERBOSE_ONEFILE"]
+    ONE_FILE_OUTPUT_FLAGS = [ONEFILE_OUT_ARG, VERBOSE_ONEFILE_OUT_ARG]
     FOUND_ONE_FILE_OUTPUT_FLAGS = [False for _ in ONE_FILE_OUTPUT_FLAGS]
 
     def __init__(self):
@@ -64,10 +83,19 @@ class CMDHandler:
         self.PACKET_COUNT = inf
         self.LOOP_TIMES = inf
         self.SLEEP_TIME = 1
-        self.OUTPUT_PATH = None
-        self.IP_FILTER = None
+
+        self.SAVE_FOUND = False
+        self.OUTPUT_FOUND = False
+
         self.SAVE_STARTDATE = None
         self.SAVE_ENDDATE = None
+        self.OUTPUT_PATH = None
+
+        self.IP_FILTER = None
+
+        self.RECORDS_FLAG = False
+        self.RECORDS_DATE = None
+        self.RECORDS_TYPE = None
 
         self.SNIFF_FLAG = False
         self.CSV_FLAG = False
@@ -109,8 +137,83 @@ class CMDHandler:
                                                f"length {length} got {len(arg.split(','))}")
         return True
 
-    def parse_sys_args(self, argv : list):
+    def arg_sanity_check(self, flag : str, arg : str, sanity_check, fail_check_descr):
+        if not sanity_check(arg):
+            raise InvalidValueError(flag, arg, fail_check_descr)
 
+        return True
+
+    # noinspection PyTypeChecker
+    def convert_list_datetime(self, l: list, flag: str):
+        if len(l) == 1:
+            date = datetime(
+                int(l[0]),
+                1,
+                1,
+                0,
+                0,
+                0,
+                000
+            )
+        elif len(l) == 2:
+            date = datetime(
+                int(l[0]),
+                int(l[1]),
+                1,
+                0,
+                0,
+                0,
+                000
+            )
+        elif len(l) == 3:
+            date = datetime(
+                int(l[0]),
+                int(l[1]),
+                int(l[2]),
+                0,
+                0,
+                0,
+                000
+            )
+        elif len(l) == 4:
+            date = datetime(
+                int(l[0]),
+                int(l[1]),
+                int(l[2]),
+                int(l[3]),
+                0,
+                0,
+                000
+            )
+        elif len(l) == 5:
+            date = datetime(
+                int(l[0]),
+                int(l[1]),
+                int(l[2]),
+                int(l[3]),
+                int(l[4]),
+                0,
+                000
+            )
+        elif len(l) == 6:
+            date = datetime(
+                int(l[0]),
+                int(l[1]),
+                int(l[2]),
+                int(l[3]),
+                int(l[4]),
+                int(l[5]),
+                000
+            )
+        else:
+            raise InvalidFormatException(
+                [flag],
+                f"Unexpected comma separated length {len(l)} on arg for flag {flag}"
+            )
+
+        return date
+
+    def parse_sys_args(self, argv : list):
         index = 0
         args_skip = 1 #skip the first argument because it's the script path lulw
         for arg in argv:
@@ -125,79 +228,98 @@ class CMDHandler:
             if upper_arg not in CMDHandler.VALID_FLAGS:
                 raise InvalidFlagError(arg, None, f"Encountered non valid flag {arg}.")
 
-            if upper_arg == "-I":
+            if upper_arg == CMDHandler.INTERFACE_TO_USE_ARG:
                 if self.arg_has_value(arg, index, argv):
                     self.INTERFACE_IPV4 = argv[index + 1]
                     args_skip += 1
 
-            if upper_arg == "-L":
+            if upper_arg == CMDHandler.LOOP_TIMES_ARG:
                 if self.arg_has_value(arg, index, argv, type_check = int):
                     self.LOOP_TIMES = int(argv[index + 1])
                     args_skip += 1
 
-            if upper_arg == "-T":
+            if upper_arg == CMDHandler.SLEEP_TIME_ARG:
                 if self.arg_has_value(arg, index, argv, type_check = float):
                     self.SLEEP_TIME = float(argv[index + 1])
                     args_skip += 1
 
-            if upper_arg == "-SNIFF":
+            if upper_arg == CMDHandler.SNIFF_ARG:
                 self.SNIFF_FLAG = True
 
-            if upper_arg == "-F":
+            if upper_arg == CMDHandler.IP_FORMAT_ARG:
                 if self.arg_has_value(arg, index, argv):
                     self.IP_FILTER = argv[index + 1].split(",")
                     args_skip += 1
 
-            if upper_arg == "-C":
+            if upper_arg == CMDHandler.PACKET_COUNT_ARG:
                 if self.arg_has_value(arg, index, argv, type_check=int):
                     self.PACKET_COUNT = int(argv[index + 1])
                     args_skip += 1
 
-            if upper_arg == "-SAVE":
+            if upper_arg == CMDHandler.SAVE_FLAG_ARG:
                 #if arg has value ... do stuff
-                argHasStartEndDate = self.arg_has_value(arg, index, argv, offset = 2, type_check=str) and \
-                                     self.arg_has_value(arg, index, argv, offset=1, type_check=str)
+                argHasStartEndDate = self.arg_has_value(arg, index, argv, offset = 2) and \
+                                     self.arg_has_value(arg, index, argv, offset = 1)
 
-                argHasCorrectFormatting = self.arg_is_comma_separated_list(argv[index + 1], 6) and \
-                                          self.arg_is_comma_separated_list(argv[index + 2], 6)
+                formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
+                formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM,SS got unexpected length"
+
+                argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
+                                                                formatCheck, formatCheckFailDesc) and \
+                                          self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
+                                                                formatCheck, formatCheckFailDesc)
 
                 if argHasStartEndDate and argHasCorrectFormatting:
                     self.SAVE_STARTDATE = argv[index + 1].split(",")
                     self.SAVE_ENDDATE = argv[index + 2].split(",")
 
-                CMDHandler.SAVE_FOUND = True
+                self.SAVE_FOUND = True
                 args_skip += 2
 
-            if upper_arg == "-O":
+            if upper_arg == CMDHandler.RECORDS_ARG:
+                formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
+                formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM got unexpected length"
+
+                argHasVal = self.arg_has_value(arg, index, argv)
+                argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.RECORDS_ARG, argv[index + 1],
+                                                                formatCheck, formatCheckFailDesc)
+
+                if argHasVal and argHasCorrectFormatting:
+                    self.RECORDS_DATE = argv[index + 1].split(",")
+
+                self.RECORDS_FLAG = True
+                args_skip += 1
+
+            if upper_arg == CMDHandler.OUTPUT_PATH_ARG:
                 #if arg has value... do stuff
                 if self.arg_has_value(arg, index, argv, type_check=str):
                     self.OUTPUT_PATH = argv[index + 1]
 
                 #misc
-                CMDHandler.OUTPUT_FOUND = True
+                self.OUTPUT_FOUND = True
                 args_skip += 1
 
-            if upper_arg == "-CSV":
+            if upper_arg == CMDHandler.CSV_OUT_ARG:
                 self.CSV_FLAG = True
                 CMDHandler.FOUND_SPECIAL_FLAGS[0] = True
 
-            if upper_arg == "-PDF":
+            if upper_arg == CMDHandler.PDF_OUT_ARG:
                 self.PDF_FLAG = True
                 CMDHandler.FOUND_SPECIAL_FLAGS[1] = True
 
-            if upper_arg == "-GRAPH":
+            if upper_arg == CMDHandler.GRAPH_OUT_ARG:
                 self.GRAPH_FLAG = True
                 CMDHandler.FOUND_SPECIAL_FLAGS[2] = True
 
-            if upper_arg == "-ONEFILE":
+            if upper_arg == CMDHandler.ONEFILE_OUT_ARG:
                 self.ONEFILE_FLAG = True
                 CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[0] = True
 
-            if upper_arg == "-VERBOSE_ONEFILE":
+            if upper_arg == CMDHandler.VERBOSE_ONEFILE_OUT_ARG:
                 self.VERBOSE_ONEFILE_FLAG = True
                 CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[1] = True
 
-            if upper_arg == "-RELAXED":
+            if upper_arg == CMDHandler.RELAXED_ARG:
                 # if arg has value... do stuff
                 if self.arg_has_value(arg, index, argv, type_check=int):
                     self.DROP_THRESHOLD = int(argv[index + 1])
@@ -205,7 +327,7 @@ class CMDHandler:
                 # misc
                 args_skip += 1
 
-            if upper_arg == "-KALM":
+            if upper_arg == CMDHandler.KALM_ARG:
                 self.DROP_THRESHOLD = 10000
 
 
@@ -213,18 +335,26 @@ class CMDHandler:
 
     def post_processing(self, ips : list):
 
-        if not CMDHandler.SAVE_FOUND and CMDHandler.OUTPUT_FOUND:
-            self.exceptions.append(InvalidFormatException(["-save"], "If -o <save path> flag is specified, "
-                                                  "-save <STARTDATE YYYY,MM,DD,HH,MM,SS> <ENDDATE YYYY,MM,DD,HH,MM,SS> "
-                                                  "must also be specified."))
+        if self.RECORDS_FLAG:
+            #if the year was provided, the len will be 1, so the
+            # magic constant will point to RECORDS_ARG_TYPE_YEAR_MAGIC_CONSTANT... etc for all others.
+            self.RECORDS_TYPE = len(self.RECORDS_DATE)
+            # noinspection PyTypeChecker
+            self.RECORDS_DATE = self.convert_list_datetime(self.RECORDS_DATE, CMDHandler.RECORDS_ARG)
 
-        if CMDHandler.SAVE_FOUND and not CMDHandler.OUTPUT_FOUND:
-            self.exceptions.append(InvalidFormatException(["-o"], "If -save flag is specified, "
+        if not self.SAVE_FOUND and self.OUTPUT_FOUND:
+            self.exceptions.append(InvalidFormatException([CMDHandler.SAVE_FLAG_ARG],
+                                                          "If -o <save path> flag is specified, "
+                                                          "-save <STARTDATE YYYY,MM,DD,HH,MM,SS> "
+                                                          "<ENDDATE YYYY,MM,DD,HH,MM,SS> must also be specified."))
+
+        if self.SAVE_FOUND and not self.OUTPUT_FOUND:
+            self.exceptions.append(InvalidFormatException([CMDHandler.OUTPUT_PATH_ARG], "If -save flag is specified, "
                                                              "-o <save path> must also be specified."))
 
         out_specifier_found = True in CMDHandler.FOUND_SPECIAL_FLAGS or True in CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS
 
-        if CMDHandler.SAVE_FOUND and CMDHandler.OUTPUT_FOUND and not out_specifier_found:
+        if self.SAVE_FOUND and self.OUTPUT_FOUND and not out_specifier_found:
             self.exceptions.append(InvalidFormatException(["an output specifier"], "An output specifier must be present"
                                                                                " to specify in what format the output "
                                                                                "will be in. Valid flags are: "
@@ -233,25 +363,20 @@ class CMDHandler:
 
         if self.SAVE_STARTDATE is not None and self.SAVE_ENDDATE is not None:
             try:
-                startdate = datetime(
-                    int(self.SAVE_STARTDATE[0]),
-                    int(self.SAVE_STARTDATE[1]),
-                    int(self.SAVE_STARTDATE[2]),
-                    int(self.SAVE_STARTDATE[3]),
-                    int(self.SAVE_STARTDATE[4]),
-                    int(self.SAVE_STARTDATE[5]),
-                    000
-                )
+                # noinspection PyTypeChecker
+                startdate = self.convert_list_datetime(self.SAVE_STARTDATE, CMDHandler.SAVE_FLAG_ARG)
+                # noinspection PyTypeChecker
+                enddate = self.convert_list_datetime(self.SAVE_ENDDATE, CMDHandler.SAVE_FLAG_ARG)
 
-                enddate = datetime(
-                    int(self.SAVE_ENDDATE[0]),
-                    int(self.SAVE_ENDDATE[1]),
-                    int(self.SAVE_ENDDATE[2]),
-                    int(self.SAVE_ENDDATE[3]),
-                    int(self.SAVE_ENDDATE[4]),
-                    int(self.SAVE_ENDDATE[5]),
-                    000
-                )
+                #sanity check that startdate is before enddate
+                order_sanity_check = enddate - startdate > timedelta(seconds=1)
+
+                #if it fails...
+                if not order_sanity_check:
+                    raise InvalidFormatException(
+                        ["-save <STARTDATE YYYY,MM,DD,HH,MM,SS> <ENDDATE YYYY,MM,DD,HH,MM,SS","-o <save path>"],
+                        "Save startdate must be a time before the enddate. Please check if your input is reversed."
+                    )
 
                 self.SAVE_STARTDATE = startdate
                 self.SAVE_ENDDATE = enddate
@@ -259,9 +384,9 @@ class CMDHandler:
             except Exception as e:
                 self.exceptions.append(e)
 
-        if out_specifier_found and not CMDHandler.SAVE_FOUND and CMDHandler.OUTPUT_FOUND:
+        if out_specifier_found and not self.SAVE_FOUND and self.OUTPUT_FOUND:
             self.exceptions.append(InvalidFormatException(
-                ["-save <STARDATE YYYY,MM,DD,HH,MM,SS> <ENDDATE YYYY,MM,DD,HH,MM,SS","-o <save path>"],
+                ["-save <STARTDATE YYYY,MM,DD,HH,MM,SS> <ENDDATE YYYY,MM,DD,HH,MM,SS","-o <save path>"],
                 "An output specifier must be present"
                 " to specify in what format the output "
                 "will be in. Valid flags are: "
@@ -282,6 +407,7 @@ class CMDHandler:
                 if self.INTERFACE_IPV4 == ip:
                     found = True
                     self.INTERFACE_READABLE = ips[0][index]
+                    break
 
                 index += 1
 
@@ -313,8 +439,9 @@ class CMDHandler:
                                                                                  "a positive integer."))
 
         if self.DROP_THRESHOLD != 1 and not self.VERBOSE_ONEFILE_FLAG:
-            self.exceptions.append(InvalidFormatException(["-verbose_onefile"], "Relaxed threshold is specified, but "
-                                                                           "-verbose_onefile is not specified. "
-                                                                           "Without the verbose onefile flag, the "
-                                                                           "argument has no effect."))
+            self.exceptions.append(InvalidFormatException([CMDHandler.VERBOSE_ONEFILE_OUT_ARG],
+                                                          "Relaxed threshold is specified, but "
+                                                          "-verbose_onefile is not specified. "
+                                                          "Without the verbose onefile flag, the "
+                                                          "argument has no effect."))
 
