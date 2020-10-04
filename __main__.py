@@ -27,7 +27,7 @@ def get_interfaces():
 
 def get_record_count(dao, date, record_type):
     # e.g. if YYYY was given,
-    count = dao.get_number_of_records_in(date, record_type)
+    count = dao.get_timestamp_number_of_records_in(date, record_type)
     return count
 
 
@@ -72,46 +72,52 @@ if __name__ == '__main__':
             #generate csv
             print("Generating CSV...")
             generator.generate_timestamp_csv(
-                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
             )
-            #TODO add packet dump
+            generator.generate_packet_csv(
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+            )
             print("Done generating CSV!")
 
         if handler.PDF_FLAG:
             #generate pdf
             print("Generating PDF...")
             generator.generate_timestamp_pdf(
-                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
             )
-            #TODO add packet dump
+            generator.generate_packet_pdf(
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+            )
             print("Done generating PDF!")
 
         if handler.GRAPH_FLAG:
             #generate graph
             print("Generating graph...")
             generator.generate_timestamp_graph(
-                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
             )
-            # TODO add packet dump
+            generator.generate_packet_graph(
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+            )
             print("Done generating graph!")
 
         if handler.ONEFILE_FLAG:
             #generate non-descriptive onefile with graph
             print("Generating onefile...")
             generator.generate_onefile(
-                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
+                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
             )
-            # TODO add packet dump
             print("Done generating onefile!")
 
         if handler.VERBOSE_ONEFILE_FLAG:
             #generate descriptive onefile with graph
             print("Generating verbose onefile...")
             generator.generate_onefile_verbose(
-                d.get_all_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
+                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
                 handler.DROP_THRESHOLD
             )
-            # TODO add packet dump
             print("Done generating verbose onefile!")
 
         #then exit

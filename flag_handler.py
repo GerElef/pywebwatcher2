@@ -216,122 +216,125 @@ class CMDHandler:
     def parse_sys_args(self, argv : list):
         index = 0
         args_skip = 1 #skip the first argument because it's the script path lulw
-        for arg in argv:
-            if args_skip > 0:
-                args_skip -= 1
+        try:
+            for arg in argv:
+                if args_skip > 0:
+                    args_skip -= 1
+                    index += 1
+                    continue
+
+                #main stuff here
+                upper_arg = arg.upper()
+
+                if upper_arg not in CMDHandler.VALID_FLAGS:
+                    raise InvalidFlagError(arg, None, f"Encountered non valid flag {arg}.")
+
+                if upper_arg == CMDHandler.INTERFACE_TO_USE_ARG:
+                    if self.arg_has_value(arg, index, argv):
+                        self.INTERFACE_IPV4 = argv[index + 1]
+                        args_skip += 1
+
+                if upper_arg == CMDHandler.LOOP_TIMES_ARG:
+                    if self.arg_has_value(arg, index, argv, type_check = int):
+                        self.LOOP_TIMES = int(argv[index + 1])
+                        args_skip += 1
+
+                if upper_arg == CMDHandler.SLEEP_TIME_ARG:
+                    if self.arg_has_value(arg, index, argv, type_check = float):
+                        self.SLEEP_TIME = float(argv[index + 1])
+                        args_skip += 1
+
+                if upper_arg == CMDHandler.SNIFF_ARG:
+                    self.SNIFF_FLAG = True
+
+                if upper_arg == CMDHandler.IP_FORMAT_ARG:
+                    if self.arg_has_value(arg, index, argv):
+                        self.IP_FILTER = argv[index + 1].split(",")
+                        args_skip += 1
+
+                if upper_arg == CMDHandler.PACKET_COUNT_ARG:
+                    if self.arg_has_value(arg, index, argv, type_check=int):
+                        self.PACKET_COUNT = int(argv[index + 1])
+                        args_skip += 1
+
+                if upper_arg == CMDHandler.SAVE_FLAG_ARG:
+                    #if arg has value ... do stuff
+                    argHasStartEndDate = self.arg_has_value(arg, index, argv, offset = 2) and \
+                                         self.arg_has_value(arg, index, argv, offset = 1)
+
+                    formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
+                    formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM,SS got unexpected length"
+
+                    argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
+                                                                    formatCheck, formatCheckFailDesc) and \
+                                              self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
+                                                                    formatCheck, formatCheckFailDesc)
+
+                    if argHasStartEndDate and argHasCorrectFormatting:
+                        self.SAVE_STARTDATE = argv[index + 1].split(",")
+                        self.SAVE_ENDDATE = argv[index + 2].split(",")
+
+                    self.SAVE_FOUND = True
+                    args_skip += 2
+
+                if upper_arg == CMDHandler.RECORDS_ARG:
+                    formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
+                    formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM got unexpected length"
+
+                    argHasVal = self.arg_has_value(arg, index, argv)
+                    argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.RECORDS_ARG, argv[index + 1],
+                                                                    formatCheck, formatCheckFailDesc)
+
+                    if argHasVal and argHasCorrectFormatting:
+                        self.RECORDS_DATE = argv[index + 1].split(",")
+
+                    self.RECORDS_FLAG = True
+                    args_skip += 1
+
+                if upper_arg == CMDHandler.OUTPUT_PATH_ARG:
+                    #if arg has value... do stuff
+                    if self.arg_has_value(arg, index, argv, type_check=str):
+                        self.OUTPUT_PATH = argv[index + 1]
+
+                    #misc
+                    self.OUTPUT_FOUND = True
+                    args_skip += 1
+
+                if upper_arg == CMDHandler.CSV_OUT_ARG:
+                    self.CSV_FLAG = True
+                    CMDHandler.FOUND_SPECIAL_FLAGS[0] = True
+
+                if upper_arg == CMDHandler.PDF_OUT_ARG:
+                    self.PDF_FLAG = True
+                    CMDHandler.FOUND_SPECIAL_FLAGS[1] = True
+
+                if upper_arg == CMDHandler.GRAPH_OUT_ARG:
+                    self.GRAPH_FLAG = True
+                    CMDHandler.FOUND_SPECIAL_FLAGS[2] = True
+
+                if upper_arg == CMDHandler.ONEFILE_OUT_ARG:
+                    self.ONEFILE_FLAG = True
+                    CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[0] = True
+
+                if upper_arg == CMDHandler.VERBOSE_ONEFILE_OUT_ARG:
+                    self.VERBOSE_ONEFILE_FLAG = True
+                    CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[1] = True
+
+                if upper_arg == CMDHandler.RELAXED_ARG:
+                    # if arg has value... do stuff
+                    if self.arg_has_value(arg, index, argv, type_check=int):
+                        self.DROP_THRESHOLD = int(argv[index + 1])
+
+                    # misc
+                    args_skip += 1
+
+                if upper_arg == CMDHandler.KALM_ARG:
+                    self.DROP_THRESHOLD = 10000
+
+
                 index += 1
-                continue
-
-            #main stuff here
-            upper_arg = arg.upper()
-
-            if upper_arg not in CMDHandler.VALID_FLAGS:
-                raise InvalidFlagError(arg, None, f"Encountered non valid flag {arg}.")
-
-            if upper_arg == CMDHandler.INTERFACE_TO_USE_ARG:
-                if self.arg_has_value(arg, index, argv):
-                    self.INTERFACE_IPV4 = argv[index + 1]
-                    args_skip += 1
-
-            if upper_arg == CMDHandler.LOOP_TIMES_ARG:
-                if self.arg_has_value(arg, index, argv, type_check = int):
-                    self.LOOP_TIMES = int(argv[index + 1])
-                    args_skip += 1
-
-            if upper_arg == CMDHandler.SLEEP_TIME_ARG:
-                if self.arg_has_value(arg, index, argv, type_check = float):
-                    self.SLEEP_TIME = float(argv[index + 1])
-                    args_skip += 1
-
-            if upper_arg == CMDHandler.SNIFF_ARG:
-                self.SNIFF_FLAG = True
-
-            if upper_arg == CMDHandler.IP_FORMAT_ARG:
-                if self.arg_has_value(arg, index, argv):
-                    self.IP_FILTER = argv[index + 1].split(",")
-                    args_skip += 1
-
-            if upper_arg == CMDHandler.PACKET_COUNT_ARG:
-                if self.arg_has_value(arg, index, argv, type_check=int):
-                    self.PACKET_COUNT = int(argv[index + 1])
-                    args_skip += 1
-
-            if upper_arg == CMDHandler.SAVE_FLAG_ARG:
-                #if arg has value ... do stuff
-                argHasStartEndDate = self.arg_has_value(arg, index, argv, offset = 2) and \
-                                     self.arg_has_value(arg, index, argv, offset = 1)
-
-                formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
-                formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM,SS got unexpected length"
-
-                argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
-                                                                formatCheck, formatCheckFailDesc) and \
-                                          self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
-                                                                formatCheck, formatCheckFailDesc)
-
-                if argHasStartEndDate and argHasCorrectFormatting:
-                    self.SAVE_STARTDATE = argv[index + 1].split(",")
-                    self.SAVE_ENDDATE = argv[index + 2].split(",")
-
-                self.SAVE_FOUND = True
-                args_skip += 2
-
-            if upper_arg == CMDHandler.RECORDS_ARG:
-                formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
-                formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM got unexpected length"
-
-                argHasVal = self.arg_has_value(arg, index, argv)
-                argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.RECORDS_ARG, argv[index + 1],
-                                                                formatCheck, formatCheckFailDesc)
-
-                if argHasVal and argHasCorrectFormatting:
-                    self.RECORDS_DATE = argv[index + 1].split(",")
-
-                self.RECORDS_FLAG = True
-                args_skip += 1
-
-            if upper_arg == CMDHandler.OUTPUT_PATH_ARG:
-                #if arg has value... do stuff
-                if self.arg_has_value(arg, index, argv, type_check=str):
-                    self.OUTPUT_PATH = argv[index + 1]
-
-                #misc
-                self.OUTPUT_FOUND = True
-                args_skip += 1
-
-            if upper_arg == CMDHandler.CSV_OUT_ARG:
-                self.CSV_FLAG = True
-                CMDHandler.FOUND_SPECIAL_FLAGS[0] = True
-
-            if upper_arg == CMDHandler.PDF_OUT_ARG:
-                self.PDF_FLAG = True
-                CMDHandler.FOUND_SPECIAL_FLAGS[1] = True
-
-            if upper_arg == CMDHandler.GRAPH_OUT_ARG:
-                self.GRAPH_FLAG = True
-                CMDHandler.FOUND_SPECIAL_FLAGS[2] = True
-
-            if upper_arg == CMDHandler.ONEFILE_OUT_ARG:
-                self.ONEFILE_FLAG = True
-                CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[0] = True
-
-            if upper_arg == CMDHandler.VERBOSE_ONEFILE_OUT_ARG:
-                self.VERBOSE_ONEFILE_FLAG = True
-                CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[1] = True
-
-            if upper_arg == CMDHandler.RELAXED_ARG:
-                # if arg has value... do stuff
-                if self.arg_has_value(arg, index, argv, type_check=int):
-                    self.DROP_THRESHOLD = int(argv[index + 1])
-
-                # misc
-                args_skip += 1
-
-            if upper_arg == CMDHandler.KALM_ARG:
-                self.DROP_THRESHOLD = 10000
-
-
-            index += 1
+        except Exception as e:
+            self.exceptions.append(e)
 
     def post_processing(self, ips : list):
 

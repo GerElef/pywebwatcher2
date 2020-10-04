@@ -67,7 +67,7 @@ class Dao:
 
         return dt
 
-    def get_number_of_records_in(self, date, const):
+    def get_timestamp_number_of_records_in(self, date, const):
         minutes_dt = self.dt_calc(date, const)
         # https://stackoverflow.com/questions/52194872/peewee-query-to-fetch-all-records-on-a-specific-date
         index = Timeframe.select() \
@@ -77,13 +77,13 @@ class Dao:
         return index
 
     #generator for all records in given date, gives back records every set interval
-    def get_all_records_in(self, date, const, interval = 1000):
+    def get_all_timestamp_records_in(self, date, const, interval = 1000):
         minutes_dt = self.dt_calc(date, const)
         # https://stackoverflow.com/questions/52194872/peewee-query-to-fetch-all-records-on-a-specific-date
         query = Timeframe.select() \
             .where(Timeframe.datetime > date & Timeframe.datetime < date + datetime.timedelta(minutes = minutes_dt))
 
-        index = 1
+        index  = 1
         frames = []
         for frame in query:
             if index % interval == 0:
@@ -98,11 +98,11 @@ class Dao:
 
         return
 
-    def get_all_records_in_dates(self, datestart, dateend, interval = 1000):
+    def get_all_timestamp_records_in_dates(self, datestart, dateend, interval = 1000):
         query = Timeframe.select() \
             .where(Timeframe.datetime > datestart & Timeframe.datetime < dateend)
 
-        index = 1
+        index  = 1
         frames = []
         for frame in query:
             if index % interval == 0:
@@ -114,5 +114,54 @@ class Dao:
             index += 1
 
         yield frames
+
+        return
+
+    def get_packet_number_of_records_in(self, date, const):
+        minutes_dt = self.dt_calc(date, const)
+        # https://stackoverflow.com/questions/52194872/peewee-query-to-fetch-all-records-on-a-specific-date
+        index = Packet.select() \
+            .where((Packet.datetime > date) & (Packet.datetime < (date + datetime.timedelta(minutes=minutes_dt)))) \
+            .count()
+
+        return index
+
+    def get_all_packet_records_in(self, date, const, interval = 1000):
+        minutes_dt = self.dt_calc(date, const)
+
+        query = Packet.select() \
+            .where(Packet.datetime > date & Packet.datetime < date + datetime.timedelta(minutes = minutes_dt))
+
+        index = 1
+        packets = []
+        for frame in query:
+            if index % interval == 0:
+                yield packets
+                index = 1
+                packets.clear()
+
+            packets.append(frame)
+            index += 1
+
+        yield packets
+
+        return
+
+    def get_all_packet_records_in_dates(self, datestart, dateend, interval = 1000):
+        query = Packet.select() \
+            .where(Packet.datetime > datestart & Packet.datetime < dateend)
+
+        index  = 1
+        packets = []
+        for frame in query:
+            if index % interval == 0:
+                yield packets
+                index = 1
+                packets.clear()
+
+            packets.append(frame)
+            index += 1
+
+        yield packets
 
         return

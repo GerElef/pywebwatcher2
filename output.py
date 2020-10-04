@@ -14,6 +14,7 @@ from time import time
 
 class Generator:
     TIMESTAMP_INFIX = "TIMESTAMP"
+    PACKET_INFIX    = "PACKET"
 
     def __init__(self):
         #self.generator = generator
@@ -34,15 +35,34 @@ class Generator:
                     file.write(line)
                     print(f"Writing:\n\t{line}")
 
+    def generate_packet_csv(self, generator : collections.Generator):
+        with open(f"{self.output_path}{Generator.PACKET_INFIX}{self.postfix}.csv", "w") as file:
+            for packets in generator:
+                for packet in packets:
+                    line = f"{packet.size},{packet.sender},{packet.receiver},{packet.interface_used}," \
+                           f"{packet.datetime}\n"
+                    file.write(line)
+                    print(f"Writing:\n\t{line}")
+
     def generate_timestamp_pdf(self, generator : collections.Generator):
+        pass
+
+    def generate_packet_pdf(self, generator : collections.Generator):
         pass
 
     def generate_timestamp_graph(self, generator : collections.Generator):
         pass
 
-    def generate_onefile(self, generator : collections.Generator):
+    def generate_packet_graph(self, generator : collections.Generator):
         pass
 
-    def generate_onefile_verbose(self, generator : collections.Generator, drop_threshold):
+    def generate_onefile(self, timestamp_generator : collections.Generator,
+                                 packet_generator : collections.Generator):
+        # do a first pass check from the packet generator, and if nothing exists, bail doing output for the packets
+        pass
+
+    def generate_onefile_verbose(self, timestamp_generator : collections.Generator,
+                                 packet_generator : collections.Generator, drop_threshold):
+        #do a first pass check from the packet generator, and if nothing exists, bail doing output for the packets
         pass
 
