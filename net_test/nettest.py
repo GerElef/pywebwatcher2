@@ -1,11 +1,10 @@
-import os
 from json import load
 from threading import Event
 from time import sleep
 
 import ping3
-from ping3 import ping
 from errors import PingError, Timeout
+from ping3 import ping
 
 from db.dao import Dao
 
@@ -80,9 +79,10 @@ class StabilityTester:
 
             except PingError as pe:
                 print(f"Encountered unexpected PingError {pe} when pinging {self.servers_readable[i]}")
+                sleep(0.1)
             except Exception:
                 #silently pass if our adapter dies or something, we do not care
-                pass
+                sleep(tts)
 
     def ping_server(self, server : str):
         return ping(server, src_addr = self.interface, unit = 'ms', timeout = StabilityTester.SLEEP_TIME)

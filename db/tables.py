@@ -8,7 +8,7 @@ class Timeframe(Model):
 
     receiver = TextField()
     receiver_readable = TextField()
-    interface = TextField()
+    interface = TextField(null = True)
     interface_dead = BooleanField(default=False)
 
     datetime = TimestampField(primary_key=True, resolution=1e3)

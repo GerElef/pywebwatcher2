@@ -1,14 +1,12 @@
-import datetime
 from math import inf
+from sys import argv
 from threading import Thread, Event
+from time import sleep
 
 from db.dao import Dao
 from flag_handler import CMDHandler
-from sys import argv
 from net_test.nettest import StabilityTester
 from net_test.sniffer import Sniffer
-from time import sleep
-
 from output import Generator
 
 
@@ -29,7 +27,6 @@ def get_record_count(dao, date, record_type):
     # e.g. if YYYY was given,
     count = dao.get_timestamp_number_of_records_in(date, record_type)
     return count
-
 
 def start_tester(iface, evt, loop_times):
     tester = StabilityTester(iface)
@@ -72,10 +69,12 @@ if __name__ == '__main__':
             #generate csv
             print("Generating CSV...")
             generator.generate_timestamp_csv(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK)
             )
             generator.generate_packet_csv(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK)
             )
             print("Done generating CSV!")
 
@@ -83,10 +82,12 @@ if __name__ == '__main__':
             #generate pdf
             print("Generating PDF...")
             generator.generate_timestamp_pdf(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK)
             )
             generator.generate_packet_pdf(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK)
             )
             print("Done generating PDF!")
 
@@ -94,10 +95,12 @@ if __name__ == '__main__':
             #generate graph
             print("Generating graph...")
             generator.generate_timestamp_graph(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK)
             )
             generator.generate_packet_graph(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK)
             )
             print("Done generating graph!")
 
@@ -105,8 +108,10 @@ if __name__ == '__main__':
             #generate non-descriptive onefile with graph
             print("Generating onefile...")
             generator.generate_onefile(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
-                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE)
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK),
+                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK)
             )
             print("Done generating onefile!")
 
@@ -114,8 +119,10 @@ if __name__ == '__main__':
             #generate descriptive onefile with graph
             print("Generating verbose onefile...")
             generator.generate_onefile_verbose(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
-                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE),
+                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK),
+                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                                                     interval=handler.DATA_CHUNK),
                 handler.DROP_THRESHOLD
             )
             print("Done generating verbose onefile!")

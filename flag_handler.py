@@ -1,8 +1,9 @@
 # Flags:
-# -i <interface ip> -l <loop times> -t <sleep time> -c <packet count>
+# -i <interface ip> -dynamic -l <loop times> -t <sleep time> -c <packet count>
 # -o <output path> -f <comma separated ips> -sniff -records <YYYY,MM,DD,HH,MM>
 # -save <startdate, in YYYY,MM,DD,HH,MM,SS> <enddate, in YYYY,MM,DD,HH,MM,SS>
 # -csv, -pdf, -graph, -onefile, -verbose_onefile -relaxed <drop threshold>
+# -data <int > 0>
 from math import inf
 from datetime import datetime, timedelta
 
@@ -59,6 +60,8 @@ class CMDHandler:
     VERBOSE_ONEFILE_OUT_ARG = "-VERBOSE_ONEFILE"
     RELAXED_ARG = "-RELAXED"
     KALM_ARG = "-KALM"
+    DYNAMIC_ARG = "-DYNAMIC"
+    DATA_ARG = "-DATA"
 
     RECORDS_ARG_TYPE_YEAR_MAGIC_CONSTANT   = 1
     RECORDS_ARG_TYPE_MONTH_MAGIC_CONSTANT  = 2
@@ -67,18 +70,17 @@ class CMDHandler:
     RECORDS_ARG_TYPE_MINUTE_MAGIC_CONSTANT = 5
 
     VALID_FLAGS = [INTERFACE_TO_USE_ARG, LOOP_TIMES_ARG, SLEEP_TIME_ARG, SNIFF_ARG, IP_FORMAT_ARG, PACKET_COUNT_ARG,
-                   SAVE_FLAG_ARG, OUTPUT_PATH_ARG, CSV_OUT_ARG, PDF_OUT_ARG, GRAPH_OUT_ARG, RECORDS_ARG,
-                   ONEFILE_OUT_ARG, VERBOSE_ONEFILE_OUT_ARG, RELAXED_ARG, KALM_ARG]
+                   SAVE_FLAG_ARG, OUTPUT_PATH_ARG, CSV_OUT_ARG, PDF_OUT_ARG, GRAPH_OUT_ARG, RECORDS_ARG, DYNAMIC_ARG,
+                   ONEFILE_OUT_ARG, VERBOSE_ONEFILE_OUT_ARG, RELAXED_ARG, KALM_ARG, DATA_ARG]
 
     SPECIAL_OUTPUT_FLAGS = [CSV_OUT_ARG, PDF_OUT_ARG, GRAPH_OUT_ARG]
-    FOUND_SPECIAL_FLAGS = [False for _ in SPECIAL_OUTPUT_FLAGS]
 
     ONE_FILE_OUTPUT_FLAGS = [ONEFILE_OUT_ARG, VERBOSE_ONEFILE_OUT_ARG]
-    FOUND_ONE_FILE_OUTPUT_FLAGS = [False for _ in ONE_FILE_OUTPUT_FLAGS]
 
     def __init__(self):
         self.INTERFACE_IPV4 = None
         self.INTERFACE_READABLE = None
+        self.DYNAMIC_FLAG = False
 
         self.PACKET_COUNT = inf
         self.LOOP_TIMES = inf
@@ -105,6 +107,7 @@ class CMDHandler:
 
         self.VERBOSE_ONEFILE_FLAG = False
         self.DROP_THRESHOLD = 1
+        self.DATA_CHUNK = 10000
 
         self.exceptions = []
 
@@ -257,20 +260,31 @@ class CMDHandler:
                         self.PACKET_COUNT = int(argv[index + 1])
                         args_skip += 1
 
+                if upper_arg == CMDHandler.DATA_ARG:
+                    int_check = lambda x: int(x) > 0
+                    int_check_fail = "Value must be integer > 0"
+                    val_is_valid = self.arg_sanity_check(CMDHandler.DATA_ARG, argv[index + 1],
+                                                         int_check, int_check_fail)
+                    arg_has_int_val = self.arg_has_value(arg, index, argv, type_check=int)
+
+                    if arg_has_int_val and val_is_valid:
+                        self.DATA_CHUNK = int(argv[index + 1])
+                        args_skip += 1
+
                 if upper_arg == CMDHandler.SAVE_FLAG_ARG:
                     #if arg has value ... do stuff
-                    argHasStartEndDate = self.arg_has_value(arg, index, argv, offset = 2) and \
+                    arg_has_start_end_date = self.arg_has_value(arg, index, argv, offset = 2) and \
                                          self.arg_has_value(arg, index, argv, offset = 1)
 
-                    formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
-                    formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM,SS got unexpected length"
+                    length_check = lambda l: 1 <= len(l.split(',')) <= 6
+                    length_check_fail = "Wanted comma separated list of style YYYY,MM,DD,HH,MM,SS got unexpected length"
 
-                    argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
-                                                                    formatCheck, formatCheckFailDesc) and \
+                    arg_has_correct_length = self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
+                                                                    length_check, length_check_fail) and \
                                               self.arg_sanity_check(CMDHandler.SAVE_FLAG_ARG, argv[index + 1],
-                                                                    formatCheck, formatCheckFailDesc)
+                                                                    length_check, length_check_fail)
 
-                    if argHasStartEndDate and argHasCorrectFormatting:
+                    if arg_has_start_end_date and arg_has_correct_length:
                         self.SAVE_STARTDATE = argv[index + 1].split(",")
                         self.SAVE_ENDDATE = argv[index + 2].split(",")
 
@@ -278,14 +292,14 @@ class CMDHandler:
                     args_skip += 2
 
                 if upper_arg == CMDHandler.RECORDS_ARG:
-                    formatCheck = lambda l: 1 <= len(l.split(',')) <= 6
-                    formatCheckFailDesc = "Wanted comma separated list of style YYYY,MM,DD,HH,MM got unexpected length"
+                    length_check = lambda l: 1 <= len(l.split(',')) <= 6
+                    length_check_fail = "Wanted comma separated list of style YYYY,MM,DD,HH,MM got unexpected length"
 
-                    argHasVal = self.arg_has_value(arg, index, argv)
-                    argHasCorrectFormatting = self.arg_sanity_check(CMDHandler.RECORDS_ARG, argv[index + 1],
-                                                                    formatCheck, formatCheckFailDesc)
+                    arg_has_val = self.arg_has_value(arg, index, argv)
+                    arg_has_correct_length = self.arg_sanity_check(CMDHandler.RECORDS_ARG, argv[index + 1],
+                                                                    length_check, length_check_fail)
 
-                    if argHasVal and argHasCorrectFormatting:
+                    if arg_has_val and arg_has_correct_length:
                         self.RECORDS_DATE = argv[index + 1].split(",")
 
                     self.RECORDS_FLAG = True
@@ -300,25 +314,23 @@ class CMDHandler:
                     self.OUTPUT_FOUND = True
                     args_skip += 1
 
+                if upper_arg == CMDHandler.DYNAMIC_ARG:
+                    self.DYNAMIC_FLAG = True
+
                 if upper_arg == CMDHandler.CSV_OUT_ARG:
                     self.CSV_FLAG = True
-                    CMDHandler.FOUND_SPECIAL_FLAGS[0] = True
 
                 if upper_arg == CMDHandler.PDF_OUT_ARG:
                     self.PDF_FLAG = True
-                    CMDHandler.FOUND_SPECIAL_FLAGS[1] = True
 
                 if upper_arg == CMDHandler.GRAPH_OUT_ARG:
                     self.GRAPH_FLAG = True
-                    CMDHandler.FOUND_SPECIAL_FLAGS[2] = True
 
                 if upper_arg == CMDHandler.ONEFILE_OUT_ARG:
                     self.ONEFILE_FLAG = True
-                    CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[0] = True
 
                 if upper_arg == CMDHandler.VERBOSE_ONEFILE_OUT_ARG:
                     self.VERBOSE_ONEFILE_FLAG = True
-                    CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS[1] = True
 
                 if upper_arg == CMDHandler.RELAXED_ARG:
                     # if arg has value... do stuff
@@ -355,7 +367,11 @@ class CMDHandler:
             self.exceptions.append(InvalidFormatException([CMDHandler.OUTPUT_PATH_ARG], "If -save flag is specified, "
                                                              "-o <save path> must also be specified."))
 
-        out_specifier_found = True in CMDHandler.FOUND_SPECIAL_FLAGS or True in CMDHandler.FOUND_ONE_FILE_OUTPUT_FLAGS
+        out_specifier_found = self.CSV_FLAG     or \
+                              self.PDF_FLAG     or \
+                              self.GRAPH_FLAG   or \
+                              self.ONEFILE_FLAG or \
+                              self.VERBOSE_ONEFILE_FLAG
 
         if self.SAVE_FOUND and self.OUTPUT_FOUND and not out_specifier_found:
             self.exceptions.append(InvalidFormatException(["an output specifier"], "An output specifier must be present"
@@ -363,6 +379,13 @@ class CMDHandler:
                                                                                "will be in. Valid flags are: "
                                                                                "-csv, -pdf, -graph, -onefile, "
                                                                                "-verbose_onefile ."))
+
+        if self.VERBOSE_ONEFILE_FLAG and not self.GRAPH_FLAG:
+            self.exceptions.append(InvalidFormatException(["-graph"], "-graph output specifier is required to be "
+                                                                      "present in order to provide the graphs for the "
+                                                                      "verbose output pdf. Please use -graph flag if "
+                                                                      "you want the verbose output."))
+
 
         if self.SAVE_STARTDATE is not None and self.SAVE_ENDDATE is not None:
             try:
@@ -397,7 +420,11 @@ class CMDHandler:
                 "-verbose_onefile .")
             )
 
-        if self.INTERFACE_IPV4 is None:
+        if self.DYNAMIC_FLAG and self.SNIFF_FLAG:
+            self.exceptions.append(InvalidFormatException(["-dynamic"], "If -dynamic argument is specified, you cannot "
+                                                                        "sniff on any interface."))
+
+        if self.INTERFACE_IPV4 is None and not self.SAVE_FOUND and not self.DYNAMIC_FLAG:
             self.exceptions.append(InvalidFormatException(["-i <interface ipv4>"], "-i argument is required and should "
                                                                               "always be present, with a valid ipv4 "
                                                                               "address corresponding to an interface."))
@@ -447,4 +474,3 @@ class CMDHandler:
                                                           "-verbose_onefile is not specified. "
                                                           "Without the verbose onefile flag, the "
                                                           "argument has no effect."))
-

@@ -1,10 +1,10 @@
 import datetime
-
 from calendar import monthrange
 
 from peewee import SqliteDatabase
 
 from db.tables import Timeframe, Packet
+
 
 class InvalidMagicConstant(Exception):
     pass
