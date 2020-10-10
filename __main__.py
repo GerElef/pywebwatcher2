@@ -73,7 +73,7 @@ if __name__ == '__main__':
                                                      interval=handler.DATA_CHUNK)
             )
             generator.generate_packet_csv(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
                                                      interval=handler.DATA_CHUNK)
             )
             print("Done generating CSV!")
@@ -86,7 +86,7 @@ if __name__ == '__main__':
                                                      interval=handler.DATA_CHUNK)
             )
             generator.generate_packet_pdf(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
                                                      interval=handler.DATA_CHUNK)
             )
             print("Done generating PDF!")
@@ -99,7 +99,7 @@ if __name__ == '__main__':
                                                      interval=handler.DATA_CHUNK)
             )
             generator.generate_packet_graph(
-                d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
+                d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
                                                      interval=handler.DATA_CHUNK)
             )
             print("Done generating graph!")
