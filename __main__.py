@@ -4,10 +4,13 @@ from threading import Thread, Event
 from time import sleep
 
 from db.dao import Dao
-from flag_handler import CMDHandler
 from net_test.nettest import StabilityTester
 from net_test.sniffer import Sniffer
-from output import Generator
+from user_io.flag_handler import CMDHandler
+from user_io.output import Generator
+
+
+# TODO convert cmd program to run as real-time data plot with pygame
 
 
 def get_interfaces():
@@ -23,10 +26,13 @@ def get_interfaces():
 
     return interfaces
 
+
 def get_record_count(dao, date, record_type):
     # e.g. if YYYY was given,
-    count = dao.get_timestamp_number_of_records_in(date, record_type)
-    return count
+    ts_count = dao.get_timestamp_number_of_records_in(date, record_type)
+    pk_count = dao.get_packet_number_of_records_in(date, record_type)
+    return ts_count, pk_count
+
 
 def start_tester(iface, evt, loop_times):
     tester = StabilityTester(iface)
@@ -35,38 +41,48 @@ def start_tester(iface, evt, loop_times):
     else:
         Thread(target=tester.ping_with_event_counter, args=(evt, loop_times,)).start()
 
+
 def start_sniffer(iface, ifaceipv4, evt, count):
-    sniffer = Sniffer(iface, ifaceipv4, evt, packet_count = count)
+    sniffer = Sniffer(iface, ifaceipv4, evt, packet_count=count)
     Thread(target=sniffer.start_sniffing).start()
 
-#TODO add exporter and finalize joining of CMD args
 
 if __name__ == '__main__':
     handler = CMDHandler()
     handler.parse_sys_args(argv)
     handler.post_processing(get_interfaces())
 
-    #if we encounter any exceptions, bail
+    # if we encounter any exceptions, bail
     if handler.exceptions:
         for e in handler.exceptions:
             print(e.__str__() + "\n")
         exit(0)
 
+    any_special_flag = handler.RECORDS_FLAG or handler.PICKLE_FOUND or handler.SAVE_FOUND
+    any_output_flag = handler.PICKLE_FOUND or handler.SAVE_FOUND
+
     if handler.RECORDS_FLAG:
-        #if we found records flag, for each MM/DD/HH/MM/SS (depending on if YYYY/MM/DD/HH/MM was given),
+        # if we found records flag, for each MM/DD/HH/MM/SS (depending on if YYYY/MM/DD/HH/MM was given),
         # print number of unique records and then exit
-        print(f"Found {get_record_count(Dao(), handler.RECORDS_DATE, handler.RECORDS_TYPE)} "
-              f"records in the given date.")
-        exit(0)
+        tsc, pkc = get_record_count(Dao(), handler.RECORDS_DATE, handler.RECORDS_TYPE)
+        print(f"Found {tsc} timestamps and {pkc} sniff records in the given date.")
+
+    if any_output_flag:
+        generator = Generator()
+
+    if handler.PICKLE_FOUND:
+        # if cmd handler found any pickles as an arg, open
+        # noinspection PyUnboundLocalVariable
+        generator.open_saved_pickles(handler.pickles)
 
     if handler.SAVE_FOUND:
-        #do stuff for output here
-        generator = Generator()
-        generator.start_new_pass(handler.OUTPUT_PATH)
+        # do stuff for output here
+        # noinspection PyUnboundLocalVariable
+        generator.start_new_pass(handler.OUTPUT_PATH, handler.ANON_FLAG)
         d = Dao()
 
         if handler.CSV_FLAG:
-            #generate csv
+            # generate csv
             print("Generating CSV...")
             generator.generate_timestamp_csv(
                 d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
@@ -74,12 +90,12 @@ if __name__ == '__main__':
             )
             generator.generate_packet_csv(
                 d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
-                                                     interval=handler.DATA_CHUNK)
+                                                  interval=handler.DATA_CHUNK)
             )
             print("Done generating CSV!")
 
         if handler.PDF_FLAG:
-            #generate pdf
+            # generate pdf
             print("Generating PDF...")
             generator.generate_timestamp_pdf(
                 d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
@@ -87,47 +103,52 @@ if __name__ == '__main__':
             )
             generator.generate_packet_pdf(
                 d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
-                                                     interval=handler.DATA_CHUNK)
+                                                  interval=handler.DATA_CHUNK)
             )
             print("Done generating PDF!")
 
         if handler.GRAPH_FLAG:
-            #generate graph
+            # generate graph
             print("Generating graph...")
             generator.generate_timestamp_graph(
                 d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
-                                                     interval=handler.DATA_CHUNK)
+                                                     interval=handler.DATA_CHUNK),
+                pickle_dump=handler.PICKLE_FLAG
             )
             generator.generate_packet_graph(
                 d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
-                                                     interval=handler.DATA_CHUNK)
+                                                  interval=handler.DATA_CHUNK),
+                pickle_dump=handler.PICKLE_FLAG
             )
             print("Done generating graph!")
 
         if handler.ONEFILE_FLAG:
-            #generate non-descriptive onefile with graph
+            # generate non-descriptive onefile with graph
             print("Generating onefile...")
             generator.generate_onefile(
                 d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
                                                      interval=handler.DATA_CHUNK),
                 d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
-                                                     interval=handler.DATA_CHUNK)
+                                                  interval=handler.DATA_CHUNK)
             )
             print("Done generating onefile!")
 
         if handler.VERBOSE_ONEFILE_FLAG:
-            #generate descriptive onefile with graph
+            # generate descriptive onefile with graph
             print("Generating verbose onefile...")
             generator.generate_onefile_verbose(
                 d.get_all_timestamp_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
                                                      interval=handler.DATA_CHUNK),
                 d.get_all_packet_records_in_dates(handler.SAVE_STARTDATE, handler.SAVE_ENDDATE,
-                                                     interval=handler.DATA_CHUNK),
+                                                  interval=handler.DATA_CHUNK),
                 handler.DROP_THRESHOLD
             )
             print("Done generating verbose onefile!")
 
-        #then exit
+        generator.close()
+        # then exit
+
+    if any_special_flag:
         exit(0)
 
     StabilityTester.UPPER_LIMIT = int(handler.SLEEP_TIME * 1000)

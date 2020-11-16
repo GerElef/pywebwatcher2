@@ -1,4 +1,4 @@
-#https://github.com/coleifer/peewee/issues/1747
+# https://github.com/coleifer/peewee/issues/1747
 from peewee import TimestampField, TextField, IntegerField, Model, SqliteDatabase, BooleanField
 
 
@@ -8,7 +8,7 @@ class Timeframe(Model):
 
     receiver = TextField()
     receiver_readable = TextField()
-    interface = TextField(null = True)
+    interface = TextField(null=True)
     interface_dead = BooleanField(default=False)
 
     datetime = TimestampField(primary_key=True, resolution=1e3)
@@ -24,7 +24,7 @@ class Packet(Model):
     receiver = TextField()
     interface_used = TextField()
 
-    datetime = TimestampField(resolution=1e3) #ms
+    datetime = TimestampField(resolution=1e3)  # ms
 
     class Meta:
         database = db = SqliteDatabase('data.db')

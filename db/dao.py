@@ -9,12 +9,13 @@ from db.tables import Timeframe, Packet
 class InvalidMagicConstant(Exception):
     pass
 
-#https://docs.peewee-orm.com/en/latest/peewee/quickstart.html
+
+# https://docs.peewee-orm.com/en/latest/peewee/quickstart.html
 class Dao:
-    YEAR_MAGIC_CONST   = 1
-    MONTH_MAGIC_CONST  = 2
-    DAY_MAGIC_CONST    = 3
-    HOUR_MAGIC_CONST   = 4
+    YEAR_MAGIC_CONST = 1
+    MONTH_MAGIC_CONST = 2
+    DAY_MAGIC_CONST = 3
+    HOUR_MAGIC_CONST = 4
     MINUTE_MAGIC_CONST = 5
 
     def __init__(self):
@@ -24,19 +25,19 @@ class Dao:
         self.db.create_tables([Timeframe, Packet])
         self.db.close()
 
-    def timestamp(self, ms : int, l : int, r : str, rr : str, i :str, iface_dead : bool = False):
+    def timestamp(self, ms: int, l: int, r: str, rr: str, i: str, iface_dead: bool = False):
         self.db.connect()
         Timeframe.create(ms=ms, limit=l,
-                       receiver=r, receiver_readable=rr,
-                       interface = i, interface_dead = iface_dead,
-                       datetime = datetime.datetime.now(datetime.timezone.utc))
+                         receiver=r, receiver_readable=rr,
+                         interface=i, interface_dead=iface_dead,
+                         datetime=datetime.datetime.now(datetime.timezone.utc))
         self.db.close()
 
-    #refactor this, should probably take less args
-    def save_packet(self, se : str, r : str, iface : str, si : int):
+    # refactor this, should probably take less args
+    def save_packet(self, se: str, r: str, iface: str, si: int):
         self.db.connect()
         Packet.create(sender=se, receiver=r, interface_used=iface, size=si,
-                         datetime = datetime.datetime.now(datetime.timezone.utc))
+                      datetime=datetime.datetime.now(datetime.timezone.utc))
         self.db.close()
 
     def dt_calc(self, date, const):
@@ -71,19 +72,19 @@ class Dao:
         minutes_dt = self.dt_calc(date, const)
         # https://stackoverflow.com/questions/52194872/peewee-query-to-fetch-all-records-on-a-specific-date
         index = Timeframe.select() \
-            .where((Timeframe.datetime > date) & (Timeframe.datetime < (date + datetime.timedelta(minutes = minutes_dt)))) \
+            .where((Timeframe.datetime > date) & (Timeframe.datetime < (date + datetime.timedelta(minutes=minutes_dt)))) \
             .count()
 
         return index
 
-    #generator for all records in given date, gives back records every set interval
-    def get_all_timestamp_records_in(self, date, const, interval = 1000):
+    # generator for all records in given date, gives back records every set interval
+    def get_all_timestamp_records_in(self, date, const, interval=1000):
         minutes_dt = self.dt_calc(date, const)
         # https://stackoverflow.com/questions/52194872/peewee-query-to-fetch-all-records-on-a-specific-date
         query = Timeframe.select() \
-            .where(Timeframe.datetime > date & Timeframe.datetime < date + datetime.timedelta(minutes = minutes_dt))
+            .where(Timeframe.datetime > date & Timeframe.datetime < date + datetime.timedelta(minutes=minutes_dt))
 
-        index  = 1
+        index = 1
         frames = []
         for frame in query:
             if index % interval == 0:
@@ -98,11 +99,11 @@ class Dao:
 
         return
 
-    def get_all_timestamp_records_in_dates(self, datestart, dateend, interval = 1000):
+    def get_all_timestamp_records_in_dates(self, datestart, dateend, interval=1000):
         query = Timeframe.select() \
             .where(Timeframe.datetime > datestart & Timeframe.datetime < dateend)
 
-        index  = 1
+        index = 1
         frames = []
         for frame in query:
             if index % interval == 0:
@@ -126,11 +127,11 @@ class Dao:
 
         return index
 
-    def get_all_packet_records_in(self, date, const, interval = 1000):
+    def get_all_packet_records_in(self, date, const, interval=1000):
         minutes_dt = self.dt_calc(date, const)
 
         query = Packet.select() \
-            .where(Packet.datetime > date & Packet.datetime < date + datetime.timedelta(minutes = minutes_dt))
+            .where(Packet.datetime > date & Packet.datetime < date + datetime.timedelta(minutes=minutes_dt))
 
         index = 1
         packets = []
@@ -147,11 +148,11 @@ class Dao:
 
         return
 
-    def get_all_packet_records_in_dates(self, datestart, dateend, interval = 1000):
+    def get_all_packet_records_in_dates(self, datestart, dateend, interval=1000):
         query = Packet.select() \
             .where(Packet.datetime > datestart & Packet.datetime < dateend)
 
-        index  = 1
+        index = 1
         packets = []
         for frame in query:
             if index % interval == 0:

@@ -10,11 +10,12 @@ from db.dao import Dao
 
 ping3.EXCEPTIONS = True
 
-class StabilityTester:
-    UPPER_LIMIT = 1000 #upper limit in ms
-    SLEEP_TIME = 1 #sleep time between calls in seconds -- ideally should be the same as upper limit
 
-    def __init__(self, src_addr : str):
+class StabilityTester:
+    UPPER_LIMIT = 1000  # upper limit in ms
+    SLEEP_TIME = 1  # sleep time between calls in seconds -- ideally should be the same as upper limit
+
+    def __init__(self, src_addr: str):
         with open("servers.json", 'r', encoding="utf-8") as file:
             data = load(file)
 
@@ -35,13 +36,13 @@ class StabilityTester:
         while True:
             self.loop_servers()
 
-    def ping_with_event(self, evt : Event):
+    def ping_with_event(self, evt: Event):
         while True:
             if evt.is_set():
                 break
             self.loop_servers()
 
-    def ping_with_event_counter(self, evt : Event, c):
+    def ping_with_event_counter(self, evt: Event, c):
         for i in range(c):
             if evt.is_set():
                 break
@@ -53,7 +54,7 @@ class StabilityTester:
         for i in range(len(self.servers)):
             try:
                 ms = int(self.ping_server(self.servers[i]))
-                ping_in_s = ms/1000
+                ping_in_s = ms / 1000
 
                 time_left = tts - ping_in_s if ping_in_s < tts else 0
 
@@ -81,16 +82,16 @@ class StabilityTester:
                 print(f"Encountered unexpected PingError {pe} when pinging {self.servers_readable[i]}")
                 sleep(0.1)
             except Exception:
-                #silently pass if our adapter dies or something, we do not care
+                # silently pass if our adapter dies or something, we do not care
                 sleep(tts)
 
-    def ping_server(self, server : str):
-        return ping(server, src_addr = self.interface, unit = 'ms', timeout = StabilityTester.SLEEP_TIME)
+    def ping_server(self, server: str):
+        return ping(server, src_addr=self.interface, unit='ms', timeout=StabilityTester.SLEEP_TIME)
 
 
 class ServerHostNameMismatchException(Exception):
     pass
 
+
 if __name__ == "__main__":
     pass
-

@@ -18,3 +18,5 @@ share/
 pyvenv.cfg
 *.bat
 /data.db-journal
+/venv
+/Include
