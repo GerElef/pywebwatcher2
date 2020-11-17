@@ -7,6 +7,7 @@ from errors import PingError, Timeout
 from ping3 import ping
 
 from db.dao import Dao
+from user_io.pygameplotter import PyEngine
 
 ping3.EXCEPTIONS = True
 
@@ -32,23 +33,23 @@ class StabilityTester:
         if len(self.servers) != len(self.servers_readable):
             raise ServerHostNameMismatchException()
 
-    def ping_forever(self):
+    def ping_forever(self, engine):
         while True:
-            self.loop_servers()
+            self.loop_servers(engine)
 
-    def ping_with_event(self, evt: Event):
+    def ping_with_event(self, evt: Event, engine: PyEngine):
         while True:
             if evt.is_set():
                 break
-            self.loop_servers()
+            self.loop_servers(engine)
 
-    def ping_with_event_counter(self, evt: Event, c):
+    def ping_with_event_counter(self, evt: Event, c, engine: PyEngine):
         for i in range(c):
             if evt.is_set():
                 break
-            self.loop_servers()
+            self.loop_servers(engine)
 
-    def loop_servers(self):
+    def loop_servers(self, engine: PyEngine):
         tts = StabilityTester.SLEEP_TIME
 
         for i in range(len(self.servers)):
@@ -62,6 +63,8 @@ class StabilityTester:
                                   self.servers[i], self.servers_readable[i],
                                   self.interface)
 
+                engine.add_stamp(self.servers_readable[i], ms)
+
                 print(f"Server Name: {self.servers_readable[i]}\n"
                       f"\tReplied in: {ms}ms\n"
                       f"\tPing Variation: {ms - self.local_history[i]}ms")
@@ -74,11 +77,13 @@ class StabilityTester:
                 self.db.timestamp(0, StabilityTester.UPPER_LIMIT,
                                   self.servers[i], self.servers_readable[i],
                                   self.interface, True)
+                engine.add_stamp(self.servers_readable[i], 0)
 
                 print(f"Server Name: {self.servers_readable[i]}\n"
                       f"\t\tConnection timed out.")
 
             except PingError as pe:
+                engine.add_stamp(self.servers_readable[i], 0)
                 print(f"Encountered unexpected PingError {pe} when pinging {self.servers_readable[i]}")
                 sleep(0.1)
             except Exception:

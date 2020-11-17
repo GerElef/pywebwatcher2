@@ -1,15 +1,16 @@
 from random import Random
-from time import sleep, time
+from time import time, sleep
 
 import pygame
 from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORESIZE
 
 
 class Stamp:
-    def __init__(self, label: str, ping: int, dead=False):
+    def __init__(self, label: str, ping: int, offset: int,  dead=False):
         self.label: str = label
         self.ping: int = ping
         self.dead: bool = dead
+        self.label_offset = offset
 
 
 class PyEngine:
@@ -25,7 +26,7 @@ class PyEngine:
         self.display_stamps: list[Stamp] = []
         self.clock = pygame.time.Clock()
         self.clock.tick(PyEngine.tickrate)
-        self.plot_font = pygame.font.Font(pygame.font.get_default_font(), 12)
+        self.plot_font = pygame.font.Font(pygame.font.get_default_font(), 14)
         self.screen = pygame.display.set_mode((width, height), RESIZABLE)
 
         self.element_count = element_count
@@ -36,6 +37,7 @@ class PyEngine:
         self.timer = timer
         if self.timer:
             self.start_time = time()
+        self.dead_counter = 0
 
         pygame.display.set_caption('pywebwatcher2')
 
@@ -49,6 +51,7 @@ class PyEngine:
         self.MARGIN_SMALL_H = 10
         self.MARGIN_SMALL_W = 10
 
+        self.label_offset_y = self.MARGIN_SMALL_H
         self.y_axis_true_h = self.screen.get_height() - self.MARGIN_H * 2
         self.x_axis_true_w = self.screen.get_width() - self.MARGIN_W * 2
         self.is_shut_down = False
@@ -91,8 +94,10 @@ class PyEngine:
         if self.title:
             self.draw_text(self.title, self.WHITE, (self.screen.get_width() / 2, int(self.MARGIN_H / 2)))
 
-        self.draw_text(f"Timestamps recorded: {self.total_stamps}", self.WHITE,
-                       (self.screen.get_width(), int(self.MARGIN_H / 2)), offset_x= -100)
+        self.draw_text(f"Total stamps: {self.total_stamps}", self.WHITE,
+                       (self.screen.get_width() + self.MARGIN_W, int(self.MARGIN_H / 2)), offset_x=-100)
+        self.draw_text(f"Dead: {round(100*(self.dead_counter/(self.total_stamps + 1)),2)}%", self.WHITE,
+                       (self.screen.get_width(), int(self.MARGIN_H / 2)), offset_x=-200)
 
     def draw_text(self, s: str, colour, pos: tuple[int, int], offset_x: int = 0, offset_y: int = 0):
         surface = self.plot_font.render(s, True, colour)
@@ -113,17 +118,18 @@ class PyEngine:
         offset_x = self.MARGIN_W
         offset_y = self.MARGIN_H
         # https://www.pygame.org/docs/ref/draw.html#pygame.draw.aaline
-        for i in range(len(self.display_stamps) - 1):
+        for i in range(0, len(self.display_stamps) - 1):
             curr_point = (offset_x + self.map_x_to_plot(i), offset_y + self.map_y_to_plot(self.display_stamps[i]))
-            next_point = (
-                offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
+            next_point = (offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
 
             self.draw_text(self.display_stamps[i].label,
-                           colour_alive if not is_dead(self.display_stamps[i]) else colour_dead, curr_point)
+                           colour_alive if not is_dead(self.display_stamps[i]) else colour_dead,
+                           curr_point, offset_y=self.display_stamps[i].label_offset)
             pygame.draw.line(self.screen, colour_alive if not is_dead(self.display_stamps[i + 1]) else colour_dead,
                              curr_point, next_point, 2)
             self.draw_text(self.display_stamps[i + 1].label,
-                           colour_alive if not is_dead(self.display_stamps[i + 1]) else colour_dead, next_point)
+                           colour_alive if not is_dead(self.display_stamps[i + 1]) else colour_dead,
+                           next_point, offset_y=self.display_stamps[i+1].label_offset)
 
     def map_y_to_plot(self, stamp: Stamp) -> int:
         # https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
@@ -137,7 +143,6 @@ class PyEngine:
             return round(self.x_axis_true_w - (self.x_axis_true_w / self.element_count) * index)
 
     def draw_axes(self):
-        # TODO add styles instead of crosses, put straight lines
         # draws vertical lines along the X axis
         def draw_x_gaps(colour, ghost_colour, height_start, height_end, width):
             current_width = self.MARGIN_W
@@ -225,7 +230,10 @@ class PyEngine:
     def add_stamp(self, label, ping):
         if len(self.display_stamps) > self.element_count:
             self.display_stamps.pop(self.element_count)
-        stamp: Stamp = Stamp(label, ping)
+        if ping <= 0:
+            self.dead_counter += 1
+        stamp: Stamp = Stamp(label, ping, self.label_offset_y)
+        self.label_offset_y = -self.label_offset_y
         self.display_stamps.insert(0, stamp)
         self.total_stamps += 1
 

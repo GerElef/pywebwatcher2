@@ -3,14 +3,14 @@ from sys import argv
 from threading import Thread, Event
 from time import sleep
 
+import pygame
+
 from db.dao import Dao
 from net_test.nettest import StabilityTester
 from net_test.sniffer import Sniffer
 from user_io.flag_handler import CMDHandler
 from user_io.output import Generator
-
-
-# TODO convert cmd program to run as real-time data plot with pygame
+from user_io.pygameplotter import PyEngine
 
 
 def get_interfaces():
@@ -34,12 +34,12 @@ def get_record_count(dao, date, record_type):
     return ts_count, pk_count
 
 
-def start_tester(iface, evt, loop_times):
+def start_tester(iface, evt, loop_times, engine):
     tester = StabilityTester(iface)
     if loop_times == inf:
-        Thread(target=tester.ping_with_event, args=(evt,)).start()
+        Thread(target=tester.ping_with_event, args=(evt, engine,)).start()
     else:
-        Thread(target=tester.ping_with_event_counter, args=(evt, loop_times,)).start()
+        Thread(target=tester.ping_with_event_counter, args=(evt, loop_times, engine)).start()
 
 
 def start_sniffer(iface, ifaceipv4, evt, count):
@@ -155,9 +155,10 @@ if __name__ == '__main__':
     StabilityTester.SLEEP_TIME = handler.SLEEP_TIME
 
     Sniffer.IP_FILTER = handler.IP_FILTER
-
+    engine = PyEngine(handler.SLEEP_TIME, StabilityTester.UPPER_LIMIT, title=f"Interface {handler.INTERFACE_IPV4}",
+                      timer=True)
     tester_event = Event()
-    start_tester(handler.INTERFACE_IPV4, tester_event, handler.LOOP_TIMES)
+    start_tester(handler.INTERFACE_IPV4, tester_event, handler.LOOP_TIMES, engine)
 
     scapy_event = Event()
     if handler.SNIFF_FLAG:
@@ -165,10 +166,14 @@ if __name__ == '__main__':
 
     try:
         while True:
-            sleep(999999)
+            if engine.is_shut_down:
+                raise KeyboardInterrupt()
+            engine.main_loop()
+            sleep(0.1)
     except KeyboardInterrupt:
         print("Shutting down threads...")
         tester_event.set()
         scapy_event.set()
     finally:
+        pygame.quit()
         exit(0)

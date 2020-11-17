@@ -1,13 +1,15 @@
+import os
+import pickle as pl
 from datetime import datetime
 from time import time
+from typing import Generator as PyGenerator
+from typing import List, Callable, Tuple, AnyStr
+
+from fpdf import FPDF
 from matplotlib import pyplot
 from matplotlib import rcParams
-from typing import List, Callable, Tuple, AnyStr
-from typing import Generator as PyGenerator
+
 from db.tables import Packet, Timeframe
-from fpdf import FPDF
-import pickle as pl
-import os
 
 
 # TODO implement anon dictionary and matching
