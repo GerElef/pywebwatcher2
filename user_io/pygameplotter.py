@@ -6,13 +6,13 @@ from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORE
 
 
 class Stamp:
-    def __init__(self, label: str, ping: int, offset: int,  dead=False):
+    def __init__(self, label: str, ping: int, offset: int):
         self.label: str = label
         self.ping: int = ping
-        self.dead: bool = dead
         self.label_offset = offset
 
 
+# TODO implement history scrolling with mouse wheel.
 class PyEngine:
     tickrate = 5
 
@@ -92,12 +92,12 @@ class PyEngine:
                            offset_x=10)
 
         if self.title:
-            self.draw_text(self.title, self.WHITE, (self.screen.get_width() / 2, int(self.MARGIN_H / 2)))
+            self.draw_text(self.title, self.WHITE, (self.MARGIN_W * 8, int(self.MARGIN_H / 2)))
 
         self.draw_text(f"Total stamps: {self.total_stamps}", self.WHITE,
                        (self.screen.get_width() + self.MARGIN_W, int(self.MARGIN_H / 2)), offset_x=-100)
-        self.draw_text(f"Dead: {round(100*(self.dead_counter/(self.total_stamps + 1)),2)}%", self.WHITE,
-                       (self.screen.get_width(), int(self.MARGIN_H / 2)), offset_x=-200)
+        self.draw_text(f"Dead: {round(100 * (self.dead_counter / (self.total_stamps + 1)), 2)}%", self.WHITE,
+                       (self.screen.get_width(), int(self.MARGIN_W / 2)), offset_x=-200)
 
     def draw_text(self, s: str, colour, pos: tuple[int, int], offset_x: int = 0, offset_y: int = 0):
         surface = self.plot_font.render(s, True, colour)
@@ -117,19 +117,26 @@ class PyEngine:
 
         offset_x = self.MARGIN_W
         offset_y = self.MARGIN_H
-        # https://www.pygame.org/docs/ref/draw.html#pygame.draw.aaline
+
         for i in range(0, len(self.display_stamps) - 1):
             curr_point = (offset_x + self.map_x_to_plot(i), offset_y + self.map_y_to_plot(self.display_stamps[i]))
             next_point = (offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
+            line_colour = colour_dead if is_dead(self.display_stamps[i]) else colour_alive
+            text_offset_y = self.label_offset_y if curr_point[1] > next_point[1] else -self.label_offset_y
 
-            self.draw_text(self.display_stamps[i].label,
-                           colour_alive if not is_dead(self.display_stamps[i]) else colour_dead,
-                           curr_point, offset_y=self.display_stamps[i].label_offset)
-            pygame.draw.line(self.screen, colour_alive if not is_dead(self.display_stamps[i + 1]) else colour_dead,
-                             curr_point, next_point, 2)
-            self.draw_text(self.display_stamps[i + 1].label,
-                           colour_alive if not is_dead(self.display_stamps[i + 1]) else colour_dead,
-                           next_point, offset_y=self.display_stamps[i+1].label_offset)
+            self.draw_text(self.display_stamps[i].label, line_colour, curr_point, offset_y=text_offset_y)
+            pygame.draw.line(self.screen, line_colour, curr_point, next_point, 2)
+
+        if len(self.display_stamps) > 1:
+            second_last_point = (offset_x + self.map_x_to_plot(len(self.display_stamps) - 2),
+                                 offset_y + self.map_y_to_plot(self.display_stamps[-2]))
+            last_point = (offset_x + self.map_x_to_plot(len(self.display_stamps) - 1),
+                          offset_y + self.map_y_to_plot(self.display_stamps[-1]))
+            line_colour = colour_alive if not is_dead(self.display_stamps[-1]) else colour_dead
+            text_offset_y = self.label_offset_y if second_last_point[1] > last_point[1] else -self.label_offset_y
+
+            self.draw_text(self.display_stamps[-1].label, line_colour, last_point, offset_y=text_offset_y)
+            pygame.draw.line(self.screen, line_colour, second_last_point, last_point, 2)
 
     def map_y_to_plot(self, stamp: Stamp) -> int:
         # https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
@@ -233,7 +240,6 @@ class PyEngine:
         if ping <= 0:
             self.dead_counter += 1
         stamp: Stamp = Stamp(label, ping, self.label_offset_y)
-        self.label_offset_y = -self.label_offset_y
         self.display_stamps.insert(0, stamp)
         self.total_stamps += 1
 
@@ -244,13 +250,17 @@ class PyEngine:
 if __name__ == "__main__":
     engine = PyEngine(1, 1000, title="Test", timer=True)
     h = 0
+    sum = -100
+    STEP = 25
     while True:
         h += 1
         if engine.is_shut_down:
             break
         engine.main_loop()
         # for reducing main loop CPU burden
-        engine.add_stamp(f"test{h}", Random().randint(-1, 1000))
-        sleep(0.25)
+        engine.add_stamp(f"test{h}", Random().randint(-100, 100))
+        sum += STEP
+
+        sleep(0.5)
 
     pygame.quit()

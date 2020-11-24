@@ -155,8 +155,10 @@ if __name__ == '__main__':
     StabilityTester.SLEEP_TIME = handler.SLEEP_TIME
 
     Sniffer.IP_FILTER = handler.IP_FILTER
-    engine = PyEngine(handler.SLEEP_TIME, StabilityTester.UPPER_LIMIT, title=f"Interface {handler.INTERFACE_IPV4}",
-                      timer=True)
+
+    engine = PyEngine(handler.SLEEP_TIME, StabilityTester.UPPER_LIMIT, 
+                      title=f"Interface {handler.INTERFACE_IPV4 if handler.INTERFACE_IPV4 else 'dynamic'}", timer=True)
+
     tester_event = Event()
     start_tester(handler.INTERFACE_IPV4, tester_event, handler.LOOP_TIMES, engine)
 
