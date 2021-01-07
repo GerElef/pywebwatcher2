@@ -12,7 +12,9 @@ class Stamp:
         self.label_offset = offset
 
 
-# TODO implement history scrolling with mouse wheel.
+# TODO implement history scrolling with mouse scroll down or up.
+# TODO implement zoom out with ctrl+mouse scroll down
+# TODO implement zoom in with ctrl+mouse scroll up
 class PyEngine:
     tickrate = 5
 
@@ -90,7 +92,7 @@ class PyEngine:
             minutes, seconds = divmod(time() - self.start_time, 60)
             hours, minutes = divmod(minutes, 60)
             self.draw_text(f"Active For: {hours:02.0f}:{minutes:02.0f}", self.WHITE,
-                                         (int(self.MARGIN_W), int(self.MARGIN_H / 2)), offset_x=10)
+                           (int(self.MARGIN_W), int(self.MARGIN_H / 2)), offset_x=10)
 
         if self.title:
             self.draw_text(self.title, self.WHITE, (int(self.MARGIN_W) * 8, int(self.MARGIN_H / 2)))
@@ -122,10 +124,10 @@ class PyEngine:
         offset_x = self.MARGIN_W
         offset_y = self.MARGIN_H
 
-        for i in range(0, len(self.display_stamps) - 1):
+        displaylen = min(len(self.display_stamps), self.element_count + 1)
+        for i in range(0, displaylen - 1):
             curr_point = (offset_x + self.map_x_to_plot(i), offset_y + self.map_y_to_plot(self.display_stamps[i]))
-            next_point = (
-                offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
+            next_point = (offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
             line_colour = colour_dead if is_dead(self.display_stamps[i]) else colour_alive
             text_offset_y = self.label_offset_y if curr_point[1] > next_point[1] else -self.label_offset_y
 
@@ -251,10 +253,10 @@ if __name__ == "__main__":
         if engine.is_shut_down:
             break
         engine.main_loop()
-        # for reducing main loop CPU burden
         engine.add_stamp(f"test{h}", Random().randint(-100, 100))
         sum += STEP
 
+        # for reducing main loop CPU burden
         sleep(0.5)
 
     pygame.quit()
