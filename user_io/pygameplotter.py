@@ -87,12 +87,13 @@ class PyEngine:
 
     def draw_misc(self):
         if self.timer:
-            epoch_hours = round(((time() - self.start_time) / 60) / 60, 3)
-            self.draw_text(f"Hours active: {epoch_hours}", self.WHITE, (int(self.MARGIN_W), int(self.MARGIN_H / 2)),
-                           offset_x=10)
+            minutes, seconds = divmod(time() - self.start_time, 60)
+            hours, minutes = divmod(minutes, 60)
+            self.draw_text(f"Active For: {hours:02.0f}:{minutes:02.0f}", self.WHITE,
+                                         (int(self.MARGIN_W), int(self.MARGIN_H / 2)), offset_x=10)
 
         if self.title:
-            self.draw_text(self.title, self.WHITE, (self.MARGIN_W * 8, int(self.MARGIN_H / 2)))
+            self.draw_text(self.title, self.WHITE, (int(self.MARGIN_W) * 8, int(self.MARGIN_H / 2)))
 
         self.draw_text(f"Total stamps: {self.total_stamps}", self.WHITE,
                        (self.screen.get_width() + self.MARGIN_W, int(self.MARGIN_H / 2)), offset_x=-100)
@@ -101,14 +102,17 @@ class PyEngine:
 
     def draw_text(self, s: str, colour, pos: tuple[int, int], offset_x: int = 0, offset_y: int = 0):
         surface = self.plot_font.render(s, True, colour)
-        x = round(pos[0] - surface.get_width() / 2) + offset_x
-        y = round(pos[1] - surface.get_height() / 2) + offset_y
+        x = int(pos[0] - surface.get_width() / 2) + offset_x
+        y = int(pos[1] - surface.get_height() / 2) + offset_y
         if x < 0:
             x = 0
-        if x > self.screen.get_width():
+        elif x > self.screen.get_width():
             x = self.screen.get_width()
-        if y > self.screen.get_width():
-            y = self.screen.get_width()
+
+        if y < 0:
+            y = 0
+        elif y > self.screen.get_width():
+            y = self.screen.get_height()
         self.screen.blit(surface, (x, y))
 
     def draw_stamps(self, colour_alive, colour_dead):
@@ -120,23 +124,13 @@ class PyEngine:
 
         for i in range(0, len(self.display_stamps) - 1):
             curr_point = (offset_x + self.map_x_to_plot(i), offset_y + self.map_y_to_plot(self.display_stamps[i]))
-            next_point = (offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
+            next_point = (
+                offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
             line_colour = colour_dead if is_dead(self.display_stamps[i]) else colour_alive
             text_offset_y = self.label_offset_y if curr_point[1] > next_point[1] else -self.label_offset_y
 
             self.draw_text(self.display_stamps[i].label, line_colour, curr_point, offset_y=text_offset_y)
             pygame.draw.line(self.screen, line_colour, curr_point, next_point, 2)
-
-        if len(self.display_stamps) > 1:
-            second_last_point = (offset_x + self.map_x_to_plot(len(self.display_stamps) - 2),
-                                 offset_y + self.map_y_to_plot(self.display_stamps[-2]))
-            last_point = (offset_x + self.map_x_to_plot(len(self.display_stamps) - 1),
-                          offset_y + self.map_y_to_plot(self.display_stamps[-1]))
-            line_colour = colour_alive if not is_dead(self.display_stamps[-1]) else colour_dead
-            text_offset_y = self.label_offset_y if second_last_point[1] > last_point[1] else -self.label_offset_y
-
-            self.draw_text(self.display_stamps[-1].label, line_colour, last_point, offset_y=text_offset_y)
-            pygame.draw.line(self.screen, line_colour, second_last_point, last_point, 2)
 
     def map_y_to_plot(self, stamp: Stamp) -> int:
         # https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
