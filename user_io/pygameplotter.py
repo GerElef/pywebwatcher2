@@ -2,7 +2,9 @@ from random import Random
 from time import time, sleep
 
 import pygame
-from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORESIZE
+from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORESIZE, MOUSEBUTTONDOWN
+
+from db.dao import Dao
 
 
 class Stamp:
@@ -12,9 +14,6 @@ class Stamp:
         self.label_offset = offset
 
 
-# TODO implement history scrolling with mouse scroll down or up.
-# TODO implement zoom out with ctrl+mouse scroll down
-# TODO implement zoom in with ctrl+mouse scroll up
 class PyEngine:
     tickrate = 5
 
@@ -24,6 +23,11 @@ class PyEngine:
         pygame.font.init()
         pygame.init()
 
+        self.DB_PULL_INTERVAL = 100
+        self.STEP_UP = 2
+        self.STEP_DOWN = 2
+        self.scroll_offset = 0
+        self.start_sticky = True
         self.total_stamps = 0
         self.display_stamps: list[Stamp] = []
         self.clock = pygame.time.Clock()
@@ -74,16 +78,52 @@ class PyEngine:
 
                 if reset:
                     self.screen = pygame.display.set_mode((width, height), RESIZABLE)
+            if event.type == MOUSEBUTTONDOWN:
+                # scroll up
+                if event.button == 4:
+                    self.scroll_offset += self.STEP_UP
+                    self.start_sticky = False
+                if event.button == 5:
+                    self.scroll_offset -= self.STEP_DOWN
+
+                    # if we're at the "top" of the graph, declare it sticky
+                    if self.scroll_offset <= 0:
+                        self.start_sticky = True
+                        self.scroll_offset = 0
 
         key_press = pygame.key.get_pressed()
         if key_press[K_ESCAPE] and (key_press[K_LSHIFT] or key_press[K_RSHIFT]):
             self.shutdown()
 
+        # if it's not sticky, e.g. we're not on the latest and greatest, and the user is scrolling...
+        if not self.start_sticky:
+            # pull from db if we don't have enough records to display without crashing
+            end = min(len(self.display_stamps), self.element_count + 1)
+            if len(self.display_stamps) < end + self.scroll_offset + 1:
+                # pull records
+                d = Dao()
+                timestamps = d.get_n_timestamp_records_starting_from(self.total_stamps, interval=self.DB_PULL_INTERVAL)
+                self.total_stamps += self.DB_PULL_INTERVAL
+                stamps: list[Stamp] = []
+                # convert into stamps
+                print(timestamps[0].datetime)
+                for timestamp in timestamps:
+                    if timestamp.ms <= 0:
+                        self.dead_counter += 1
+                    stamps.append(Stamp(timestamp.receiver_readable, timestamp.ms, offset=self.label_offset_y))
+                self.display_stamps.extend(stamps)
+
+                # if we still don't have enough records, remove the last step the user did...
+                if len(self.display_stamps) < end + self.scroll_offset + 1:
+                    if self.scroll_offset > self.STEP_UP:
+                        self.scroll_offset -= self.STEP_UP
+                    else:
+                        self.scroll_offset = 0
+
         self.draw_axes()
         self.draw_stamps(self.GREEN, self.MARINE)
         self.draw_misc()
 
-        # https://sivasantosh.wordpress.com/2012/07/21/renderupdates-pygame/
         # optimize the rendering process
         pygame.display.update()
 
@@ -124,14 +164,17 @@ class PyEngine:
         offset_x = self.MARGIN_W
         offset_y = self.MARGIN_H
 
-        displaylen = min(len(self.display_stamps), self.element_count + 1)
-        for i in range(0, displaylen - 1):
-            curr_point = (offset_x + self.map_x_to_plot(i), offset_y + self.map_y_to_plot(self.display_stamps[i]))
-            next_point = (offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(self.display_stamps[i + 1]))
-            line_colour = colour_dead if is_dead(self.display_stamps[i]) else colour_alive
+        end = min(len(self.display_stamps), self.element_count + 1)
+        for i in range(0, end - 1):
+            curr_stamp = self.display_stamps[i + self.scroll_offset]
+            next_stamp = self.display_stamps[i + 1 + self.scroll_offset]
+
+            curr_point = (offset_x + self.map_x_to_plot(i), offset_y + self.map_y_to_plot(curr_stamp))
+            next_point = (offset_x + self.map_x_to_plot(i + 1), offset_y + self.map_y_to_plot(next_stamp))
+            line_colour = colour_dead if is_dead(curr_stamp) else colour_alive
             text_offset_y = self.label_offset_y if curr_point[1] > next_point[1] else -self.label_offset_y
 
-            self.draw_text(self.display_stamps[i].label, line_colour, curr_point, offset_y=text_offset_y)
+            self.draw_text(curr_stamp.label, line_colour, curr_point, offset_y=text_offset_y)
             pygame.draw.line(self.screen, line_colour, curr_point, next_point, 2)
 
     def map_y_to_plot(self, stamp: Stamp) -> int:
@@ -141,9 +184,9 @@ class PyEngine:
 
     def map_x_to_plot(self, index) -> int:
         if index == 0:
-            return round(self.x_axis_true_w)
+            return int(self.x_axis_true_w)
         else:
-            return round(self.x_axis_true_w - (self.x_axis_true_w / self.element_count) * index)
+            return int(self.x_axis_true_w - (self.x_axis_true_w / self.element_count) * index)
 
     def draw_axes(self):
         # draws vertical lines along the X axis
@@ -231,8 +274,9 @@ class PyEngine:
                     self.screen.get_height() - self.MARGIN_SMALL_W * 4, self.MARGIN_SMALL_W * 2)
 
     def add_stamp(self, label, ping):
-        if len(self.display_stamps) > self.element_count:
-            self.display_stamps.pop(self.element_count)
+        if not self.start_sticky:
+            self.scroll_offset += 1
+
         if ping <= 0:
             self.dead_counter += 1
         stamp: Stamp = Stamp(label, ping, self.label_offset_y)
@@ -246,17 +290,19 @@ class PyEngine:
 if __name__ == "__main__":
     engine = PyEngine(1, 1000, title="Test", timer=True)
     h = 0
-    sum = -100
+    sum1 = -100
     STEP = 25
     while True:
-        h += 1
         if engine.is_shut_down:
             break
         engine.main_loop()
-        engine.add_stamp(f"test{h}", Random().randint(-100, 100))
-        sum += STEP
+        # for testing
+        if h < 15:
+            engine.add_stamp(f"test{h}", Random().randint(0, 750))
+        sum1 += STEP
 
+        h += 1
         # for reducing main loop CPU burden
-        sleep(0.5)
+        sleep(0.1)
 
     pygame.quit()

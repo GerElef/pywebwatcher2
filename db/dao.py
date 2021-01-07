@@ -77,6 +77,16 @@ class Dao:
 
         return index
 
+    # query for getting M timestamp records skipping past first N records
+    def get_n_timestamp_records_starting_from(self, starting_index: int, interval=1000) -> list[Timeframe]:
+        query = Timeframe.select().order_by(Timeframe.datetime.desc()).limit(interval).offset(starting_index)
+
+        frames = []
+        for frame in query:
+            frames.append(frame)
+
+        return frames
+
     # generator for all records in given date, gives back records every set interval
     def get_all_timestamp_records_in(self, date, const, interval=1000):
         minutes_dt = self.dt_calc(date, const)

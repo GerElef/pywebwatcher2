@@ -34,12 +34,12 @@ def get_record_count(dao, date, record_type):
     return ts_count, pk_count
 
 
-def start_tester(iface, evt, loop_times, engine):
+def start_tester(iface, evt, loop_times, dp_engine):
     tester = StabilityTester(iface)
     if loop_times == inf:
-        Thread(target=tester.ping_with_event, args=(evt, engine,)).start()
+        Thread(target=tester.ping_with_event, args=(evt, dp_engine,)).start()
     else:
-        Thread(target=tester.ping_with_event_counter, args=(evt, loop_times, engine)).start()
+        Thread(target=tester.ping_with_event_counter, args=(evt, loop_times, dp_engine)).start()
 
 
 def start_sniffer(iface, ifaceipv4, evt, count):
@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
     Sniffer.IP_FILTER = handler.IP_FILTER
 
-    engine = PyEngine(handler.SLEEP_TIME, StabilityTester.UPPER_LIMIT, 
+    engine = PyEngine(handler.SLEEP_TIME, StabilityTester.UPPER_LIMIT,
                       title=f"Interface {handler.INTERFACE_IPV4 if handler.INTERFACE_IPV4 else 'dynamic'}", timer=True)
 
     tester_event = Event()
@@ -171,7 +171,7 @@ if __name__ == '__main__':
             if engine.is_shut_down:
                 raise KeyboardInterrupt()
             engine.main_loop()
-            sleep(0.1)
+            sleep(0.05)  # 20 frames a second
     except KeyboardInterrupt:
         print("Shutting down threads...")
         tester_event.set()
