@@ -106,7 +106,6 @@ class PyEngine:
                 self.total_stamps += self.DB_PULL_INTERVAL
                 stamps: list[Stamp] = []
                 # convert into stamps
-                print(timestamps[0].datetime)
                 for timestamp in timestamps:
                     if timestamp.ms <= 0:
                         self.dead_counter += 1
