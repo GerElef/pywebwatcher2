@@ -3,8 +3,18 @@ from time import time, sleep
 
 import pygame
 from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORESIZE, MOUSEBUTTONDOWN
+from typing import Callable
 
 from db.dao import Dao
+
+
+class PyBtn:
+    def __init__(self, btn: pygame.rect, pos: tuple):
+        self.btn = btn
+        self.pos = pos
+
+    def render(self, screen):
+        screen.blit(self.btn, self.pos)
 
 
 class Stamp:
@@ -52,6 +62,8 @@ class PyEngine:
         self.MARINE = pygame.color.Color(255, 65, 50)
         self.GREEN = pygame.color.Color(60, 255, 60)
         self.BLACK = pygame.color.Color(0, 0, 0)
+        #TODO
+        #self.JUMP_BTN = PyBtn(pygame.rect(l, t, w, h))
         self.MARGIN_W = 30
         self.MARGIN_H = 30
         self.MARGIN_SMALL_H = 10
@@ -78,7 +90,14 @@ class PyEngine:
 
                 if reset:
                     self.screen = pygame.display.set_mode((width, height), RESIZABLE)
+
+                #TODO
+                # if resized create rect w/ new height, width
             if event.type == MOUSEBUTTONDOWN:
+                #TODO
+                # if it's button 1 (left click), and it's on top of a button (any button), execute that button's
+                # code
+
                 # scroll up
                 if event.button == 4:
                     self.scroll_offset += self.STEP_UP
@@ -135,6 +154,11 @@ class PyEngine:
 
         if self.title:
             self.draw_text(self.title, self.WHITE, (int(self.MARGIN_W) * 8, int(self.MARGIN_H / 2)))
+
+        #TODO
+        if self.scroll_offset > 0:
+            pass
+
 
         self.draw_text(f"Total stamps: {self.total_stamps}", self.WHITE,
                        (self.screen.get_width() + self.MARGIN_W, int(self.MARGIN_H / 2)), offset_x=-100)
@@ -231,11 +255,14 @@ class PyEngine:
                 current_height += vertical_step
 
         def get_x_label(index):
-            count = self.stepx * self.element_count
+            count = self.stepx * (self.element_count + self.scroll_offset)
             for k in range(self.element_count - 1):
                 count -= self.stepx
                 if k == index:
                     return count
+
+            if self.scroll_offset > 0:
+                return count - self.stepx
             return "LIVE"
 
         def get_y_label(index):
