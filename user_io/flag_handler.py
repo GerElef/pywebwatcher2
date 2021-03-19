@@ -160,72 +160,19 @@ class CMDHandler:
         return True
 
     # noinspection PyTypeChecker
-    def convert_list_datetime(self, date_val_list: list, flag: str):
-        if len(date_val_list) == 1:
-            date = datetime(
-                int(date_val_list[0]),
-                1,
-                1,
-                0,
-                0,
-                0,
-                000
-            )
-        elif len(date_val_list) == 2:
-            date = datetime(
-                int(date_val_list[0]),
-                int(date_val_list[1]),
-                1,
-                0,
-                0,
-                0,
-                000
-            )
-        elif len(date_val_list) == 3:
-            date = datetime(
-                int(date_val_list[0]),
-                int(date_val_list[1]),
-                int(date_val_list[2]),
-                0,
-                0,
-                0,
-                000
-            )
-        elif len(date_val_list) == 4:
-            date = datetime(
-                int(date_val_list[0]),
-                int(date_val_list[1]),
-                int(date_val_list[2]),
-                int(date_val_list[3]),
-                0,
-                0,
-                000
-            )
-        elif len(date_val_list) == 5:
-            date = datetime(
-                int(date_val_list[0]),
-                int(date_val_list[1]),
-                int(date_val_list[2]),
-                int(date_val_list[3]),
-                int(date_val_list[4]),
-                0,
-                000
-            )
-        elif len(date_val_list) == 6:
-            date = datetime(
-                int(date_val_list[0]),
-                int(date_val_list[1]),
-                int(date_val_list[2]),
-                int(date_val_list[3]),
-                int(date_val_list[4]),
-                int(date_val_list[5]),
-                000
-            )
+    def convert_list_datetime(self, date_val_list: list[int], flag: str):
+
+        def destructor(y=1, mm=1, d=1, h=0, m=0, s=0):
+            return datetime(int(y), int(mm), int(d), int(h), int(m), int(s), 000)
+
+        if 0 < len(date_val_list) < 6:
+            date = destructor(*date_val_list)
         else:
             raise InvalidFormatException(
                 [flag],
                 f"Unexpected comma separated length {len(date_val_list)} on arg for flag {flag}"
             )
+
 
         return date
 

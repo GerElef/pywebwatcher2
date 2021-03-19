@@ -63,7 +63,9 @@ class PyEngine:
         self.GREEN = pygame.color.Color(60, 255, 60)
         self.BLACK = pygame.color.Color(0, 0, 0)
         #TODO
-        #self.JUMP_BTN = PyBtn(pygame.rect(l, t, w, h))
+        # self.JUMP_BTN = PyBtn(pygame.rect(l, t, w, h))
+        #TODO
+        # fill the area under the "plot line", e.g. if the ping is 305, 0-305 should be filled with the same colour...
         self.MARGIN_W = 30
         self.MARGIN_H = 30
         self.MARGIN_SMALL_H = 10
