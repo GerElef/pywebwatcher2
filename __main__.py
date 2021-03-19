@@ -10,7 +10,7 @@ from net_test.nettest import StabilityTester
 from net_test.sniffer import Sniffer
 from user_io.flag_handler import CMDHandler
 from user_io.output import Generator
-from user_io.pygameplotter import PyEngine
+from user_io.pygameplotter import Engine, PingScene
 
 
 def get_interfaces():
@@ -34,12 +34,12 @@ def get_record_count(dao, date, record_type):
     return ts_count, pk_count
 
 
-def start_tester(iface, evt, loop_times, dp_engine):
+def start_tester(iface, evt, loop_times, dp_scene: PingScene):
     tester = StabilityTester(iface)
     if loop_times == inf:
-        Thread(target=tester.ping_with_event, args=(evt, dp_engine,)).start()
+        Thread(target=tester.ping_with_event, args=(evt, dp_scene,)).start()
     else:
-        Thread(target=tester.ping_with_event_counter, args=(evt, loop_times, dp_engine)).start()
+        Thread(target=tester.ping_with_event_counter, args=(evt, loop_times, dp_scene)).start()
 
 
 def start_sniffer(iface, ifaceipv4, evt, count):
@@ -156,11 +156,13 @@ if __name__ == '__main__':
 
     Sniffer.IP_FILTER = handler.IP_FILTER
 
-    engine = PyEngine(handler.SLEEP_TIME, StabilityTester.UPPER_LIMIT,
-                      title=f"Interface {handler.INTERFACE_IPV4 if handler.INTERFACE_IPV4 else 'dynamic'}", timer=True)
+    ping_scene = PingScene(handler.SLEEP_TIME, StabilityTester.UPPER_LIMIT,
+                           title=f"Interface {handler.INTERFACE_IPV4 if handler.INTERFACE_IPV4 else 'dynamic'}",
+                           timer=True)
+    engine = Engine([ping_scene])
 
     tester_event = Event()
-    start_tester(handler.INTERFACE_IPV4, tester_event, handler.LOOP_TIMES, engine)
+    start_tester(handler.INTERFACE_IPV4, tester_event, handler.LOOP_TIMES, ping_scene)
 
     scapy_event = Event()
     if handler.SNIFF_FLAG:
