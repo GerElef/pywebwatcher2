@@ -1,6 +1,6 @@
-peewee~=3.14.0
-matplotlib~=3.3.3
-fpdf~=1.7.2
-pygame~=2.0.0
-ping3~=2.6.6
-scapy~=2.4.4
+fpdf==1.7.2
+matplotlib==3.3.3
+peewee==3.14.0
+ping3==2.6.6
+pygame==2.0.0
+scapy==2.4.4

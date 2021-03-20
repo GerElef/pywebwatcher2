@@ -8,9 +8,10 @@ import pygame
 from db.dao import Dao
 from net_test.nettest import StabilityTester
 from net_test.sniffer import Sniffer
+from user_io.PingScene import PingScene
 from user_io.flag_handler import CMDHandler
 from user_io.output import Generator
-from user_io.pygameplotter import Engine, PingScene
+from user_io.pygameplotter import Engine
 
 
 def get_interfaces():

@@ -31,6 +31,8 @@ from db.tables import Packet, Timeframe
 #  possibly, make it flag activated
 
 
+
+
 class DataPlotPoint:
 
     def __init__(self, title: AnyStr, x, y, z=None, receiver=None, xlim=None, ylim=None, zlim=None):

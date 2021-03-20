@@ -7,7 +7,7 @@ from errors import PingError, Timeout
 from ping3 import ping
 
 from db.dao import Dao
-from user_io.pygameplotter import PingScene
+from user_io.PingScene import PingScene
 
 ping3.EXCEPTIONS = True
 
