@@ -174,7 +174,7 @@ if __name__ == '__main__':
             if engine.is_shut_down:
                 raise KeyboardInterrupt()
             engine.main_loop()
-            sleep(0.05)  # 20 frames a second
+            sleep(0.03)  # ~40 frames a second
     except KeyboardInterrupt:
         print("Shutting down threads...")
         tester_event.set()

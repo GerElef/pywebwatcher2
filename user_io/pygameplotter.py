@@ -51,6 +51,7 @@ class Engine:
         for event in pygame.event.get():
             if event.type == QUIT:
                 self.shutdown()
+                return
 
             if event.type == VIDEORESIZE:
                 width, height = event.size
@@ -64,6 +65,7 @@ class Engine:
                 if self.reset:
                     self.screen = pygame.display.set_mode((width, height), RESIZABLE)
                     self.reset = False
+                continue
 
             self.scenes[self.scene_index].pushEvent(event)
 
@@ -74,6 +76,7 @@ class Engine:
         self.scene_index += self.scenes[self.scene_index].onTransition()
         if self.scene_index >= len(self.scenes):
             self.shutdown()
+            return
 
         self.scenes[self.scene_index].render(self.screen)
 

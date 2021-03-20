@@ -10,17 +10,19 @@ from math import inf
 
 
 class InvalidParameterError(Exception):
-    def __init__(self, flag, value, description: str):
+    def __init__(self, flag, value, description: str, str_keyword: str = "parameter"):
         self.flag = flag
         self.val = value
         self.desc = description
+        self.str_keyword = str_keyword
 
     def __str__(self):
-        return f"Invalid parameter {self.flag}, with value {self.val}.\nDescription: {self.desc}"
+        return f"Invalid {self.str_keyword} {self.flag}, with value {self.val}.\nDescription: {self.desc}"
 
 
 class InvalidFlagError(InvalidParameterError):
-    pass
+    def __init__(self, flag, value, description: str):
+        super().__init__(flag, value, description, str_keyword="flag")
 
 
 class InvalidValueError(InvalidParameterError):
