@@ -7,14 +7,18 @@ from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORE
 from db.dao import Dao
 
 
+pygame.mixer.pre_init(44100, -16, 2, 2048)
+pygame.mixer.init()
+pygame.font.init()
+pygame.init()
+
+
 class Stamp:
     def __init__(self, label: str, ping: int, offset: int):
         self.label: str = label
         self.ping: int = ping
         self.label_offset = offset
 
-
-#TODO drawable class?
 
 class Scene(ABC):
     def __init__(self):
@@ -64,10 +68,10 @@ class PingScene(Scene):
         self.MARINE = pygame.color.Color(255, 65, 50)
         self.GREEN = pygame.color.Color(60, 255, 60)
         self.BLACK = pygame.color.Color(0, 0, 0)
-        #TODO
-        # self.JUMP_BTN = PyBtn(pygame.rect(l, t, w, h))
-        #TODO
-        # fill the area under the "plot line", e.g. if the ping is 305, 0-305 should be filled with the same colour...
+        # TODO
+        #  self.JUMP_BTN = PyBtn(pygame.rect(l, t, w, h))
+        # TODO
+        #  fill the area under the "plot line", e.g. if the ping is 305, 0-305 should be filled with the same colour...
         self.MARGIN_W = 30
         self.MARGIN_H = 30
         self.MARGIN_SMALL_H = 10
@@ -79,9 +83,9 @@ class PingScene(Scene):
 
     def pushEvent(self, event: pygame.event):
         if event.type == MOUSEBUTTONDOWN:
-            #TODO
-            # if it's button 1 (left click), and it's on top of a button (any button), execute that button's
-            # code
+            # TODO
+            #  if it's button 1 (left click), and it's on top of a button (any button), execute that button's
+            #  code
 
             # scroll up
             if event.button == 4:
@@ -353,8 +357,8 @@ class Engine:
                     self.screen = pygame.display.set_mode((width, height), RESIZABLE)
                     self.reset = False
 
-                #TODO
-                # if resized create rect w/ new height, width
+                # TODO
+                #  if resized create rect w/ new height, width
 
             self.scenes[self.scene_index].pushEvent(event)
 
