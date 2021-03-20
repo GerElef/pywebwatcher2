@@ -6,7 +6,6 @@ from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORE
 
 from db.dao import Dao
 
-
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.mixer.init()
 pygame.font.init()
@@ -57,8 +56,7 @@ class PingScene(Scene):
         self.ylim = ylim
         self.title = title
         self.timer = timer
-        if self.timer:
-            self.start_time = time()
+        self.start_time = time()
         self.dead_counter = 0
 
         pygame.display.set_caption('pywebwatcher2')
@@ -69,8 +67,6 @@ class PingScene(Scene):
         self.GREEN = pygame.color.Color(60, 255, 60)
         self.BLACK = pygame.color.Color(0, 0, 0)
         # TODO
-        #  self.JUMP_BTN = PyBtn(pygame.rect(l, t, w, h))
-        # TODO
         #  fill the area under the "plot line", e.g. if the ping is 305, 0-305 should be filled with the same colour...
         self.MARGIN_W = 30
         self.MARGIN_H = 30
@@ -78,14 +74,16 @@ class PingScene(Scene):
         self.MARGIN_SMALL_W = 10
 
         self.label_offset_y = self.MARGIN_SMALL_H
+        self.jump_to_bottom_button_rect : pygame.Rect = None
 
         self.reset = False
 
     def pushEvent(self, event: pygame.event):
         if event.type == MOUSEBUTTONDOWN:
-            # TODO
-            #  if it's button 1 (left click), and it's on top of a button (any button), execute that button's
-            #  code
+            if event.button == 1 and self.scroll_offset > 0:
+                self.jump_to_bottom_button_rect.collidepoint(event.pos)
+                self.scroll_offset = 0
+                self.start_sticky = True
 
             # scroll up
             if event.button == 4:
@@ -203,12 +201,19 @@ class PingScene(Scene):
             next_stamp = self.display_stamps[i + 1 + self.scroll_offset]
 
             curr_point = (offset_x + self.map_x_to_plot(screen, i), offset_y + self.map_y_to_plot(screen, curr_stamp))
-            next_point = (offset_x + self.map_x_to_plot(screen, i + 1), offset_y + self.map_y_to_plot(screen, next_stamp))
+            next_point = (
+                offset_x + self.map_x_to_plot(screen, i + 1), offset_y + self.map_y_to_plot(screen, next_stamp))
             line_colour = colour_dead if is_dead(curr_stamp) else colour_alive
             text_offset_y = self.label_offset_y if curr_point[1] > next_point[1] else -self.label_offset_y
 
             self.draw_text(screen, curr_stamp.label, line_colour, curr_point, offset_y=text_offset_y)
             pygame.draw.line(screen, line_colour, curr_point, next_point, 2)
+
+    def calc_jump_to_bottom_pos_tuples(self, screen) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+        x_axis_true_w = screen.get_width() - self.MARGIN_W  # this is where the last two points will be on the X axis
+        y_axis_true_h = screen.get_height() - self.MARGIN_H  # this is where the last point will be on the Y axis
+        y_axis_middle = screen.get_height() // 2  # this is the middle point of the screen (middle point y)
+        return (x_axis_true_w + 5, self.MARGIN_H), (screen.get_width(), y_axis_middle), (x_axis_true_w + 5, y_axis_true_h)
 
     def draw_misc(self, screen):
         if self.timer:
@@ -220,9 +225,9 @@ class PingScene(Scene):
         if self.title:
             self.draw_text(screen, self.title, self.WHITE, (int(self.MARGIN_W) * 8, int(self.MARGIN_H / 2)))
 
-        # TODO button
         if self.scroll_offset > 0:
-            pass
+            self.jump_to_bottom_button_rect = \
+                pygame.draw.polygon(screen, self.GRAY, points=self.calc_jump_to_bottom_pos_tuples(screen))
 
         self.draw_text(screen, f"Total stamps: {self.total_stamps}", self.WHITE,
                        (screen.get_width() + self.MARGIN_W, int(self.MARGIN_H / 2)), offset_x=-100)
@@ -294,8 +299,8 @@ class PingScene(Scene):
                         self.scroll_offset = 0
 
         self.draw_axes(screen)
-        self.draw_stamps(screen, self.GREEN, self.MARINE)
         self.draw_misc(screen)
+        self.draw_stamps(screen, self.GREEN, self.MARINE)
 
 
 class StartScene(Scene):
