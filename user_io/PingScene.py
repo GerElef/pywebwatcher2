@@ -49,16 +49,16 @@ class PingScene(Scene):
         self.MARGIN_SMALL_W = 10
 
         self.label_offset_y = self.MARGIN_SMALL_H
-        self.jump_to_bottom_button_rect: pygame.Rect = None
+        self.jump_to_bottom_button_rect: pygame.Rect = pygame.rect.Rect(0, 0, 0, 0)
 
         self.reset = False
 
     def pushEvent(self, event: pygame.event):
         if event.type == MOUSEBUTTONDOWN:
             if event.button == 1 and self.scroll_offset > 0:
-                self.jump_to_bottom_button_rect.collidepoint(event.pos)
-                self.scroll_offset = 0
-                self.start_sticky = True
+                if self.jump_to_bottom_button_rect.collidepoint(event.pos):
+                    self.scroll_offset = 0
+                    self.start_sticky = True
 
             # scroll up
             if event.button == 4:

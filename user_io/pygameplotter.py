@@ -65,7 +65,7 @@ class Engine:
                 if self.reset:
                     self.screen = pygame.display.set_mode((width, height), RESIZABLE)
                     self.reset = False
-                continue
+                    continue
 
             self.scenes[self.scene_index].pushEvent(event)
 

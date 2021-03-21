@@ -18,10 +18,10 @@ class StabilityTester:
 
     def __init__(self, src_addr: str):
         with open("servers.json", 'r', encoding="utf-8") as file:
-            data = load(file)
+            data: list[list[str], list[str]] = load(file)
 
-        self.servers = data[0]
-        self.servers_readable = data[1]
+        self.servers: list = data[0]
+        self.servers_readable: list = data[1]
         self.local_history = []
 
         self.db = Dao()
