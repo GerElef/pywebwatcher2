@@ -20,3 +20,4 @@ pyvenv.cfg
 /data.db-journal
 /venv
 /Include
+/errors.txt

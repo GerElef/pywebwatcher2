@@ -205,9 +205,10 @@ class PingScene(Scene):
             self.jump_to_bottom_button_rect = \
                 pygame.draw.polygon(screen, self.GRAY, points=self.calc_jump_to_bottom_pos_tuples(screen))
 
+        temp_total_stamps = self.total_stamps if self.total_stamps != 0 else 1
         self.draw_text(screen, f"Total stamps: {self.total_stamps}", self.WHITE,
                        (screen.get_width() + self.MARGIN_W, int(self.MARGIN_H / 2)), offset_x=-100)
-        self.draw_text(screen, f"Dead: {round(100 * (self.dead_counter / (self.total_stamps + 1)), 2)}%", self.WHITE,
+        self.draw_text(screen, f"Dead: {round(100 * (self.dead_counter / temp_total_stamps), 2)}%", self.WHITE,
                        (screen.get_width(), int(self.MARGIN_W / 2)), offset_x=-200)
 
     def draw_text(self, screen, s: str, colour, pos: tuple[int, int], offset_x: int = 0, offset_y: int = 0):
