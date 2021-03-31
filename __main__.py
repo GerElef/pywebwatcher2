@@ -1,7 +1,6 @@
 from math import inf
 from sys import argv
 from threading import Thread, Event
-from time import sleep
 
 import pygame
 
@@ -14,7 +13,7 @@ from user_io.output import Generator
 from user_io.pygameplotter import Engine
 
 
-def get_interfaces():
+def get_interfaces() -> list:
     ifaces = Sniffer.get_interface_list()
 
     interfaces = [[], []]
@@ -174,7 +173,6 @@ if __name__ == '__main__':
             if engine.is_shut_down:
                 raise KeyboardInterrupt()
             engine.main_loop()
-            sleep(0.03)  # ~40 frames a second
     except KeyboardInterrupt:
         print("Shutting down threads...")
         tester_event.set()

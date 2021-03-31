@@ -403,7 +403,4 @@ if __name__ == "__main__":
             break
         engine.main_loop()
 
-        # for reducing main loop CPU burden
-        sleep(0.1)
-
     pygame.quit()
