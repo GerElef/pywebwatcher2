@@ -350,7 +350,7 @@ class StartScene(Scene):
 
     def createOptionLines(self) -> list[OptionLine]:
         GAP_STEP = 30
-        ypos = 0
+        ypos = 5
         scroll_lines: list[OptionLine] = []
         for option in self.options:
             cbx = None

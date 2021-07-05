@@ -280,6 +280,9 @@ class PingScene(Scene):
         self.draw_stamps(screen, self.GREEN, self.MARINE)
 
 
+# TODO benchmark mem usage of keeping 36k+ objects in memory
+#  I noticed something weird with resource manager (1.5gb committed, working set 8mb ? what was that all about?)
+#  and I think the culprit is pingscene. so, benchmark the memory usage live
 if __name__ == "__main__":
     ping_scene = PingScene(1, 1000, title="Test", timer=True)
     engine = Engine([ping_scene])

@@ -160,7 +160,8 @@ if __name__ == '__main__':
                            title=f"Interface {handler.INTERFACE_IPV4 if handler.INTERFACE_IPV4 else 'dynamic'}",
                            timer=True)
     engine = Engine([ping_scene])
-
+    # TODO make tester non-mandatory
+    # TODO make tester compatible with linux https://github.com/kyan001/ping3/blob/master/ping3.py look at ping fun
     tester_event = Event()
     start_tester(handler.INTERFACE_IPV4, tester_event, handler.LOOP_TIMES, ping_scene)
 
