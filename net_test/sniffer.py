@@ -47,16 +47,3 @@ class Sniffer:
             ip_list.append(get_if_addr(iface))
 
         return ip_list
-    #     interfaces = [[], [], [], []]
-    #
-    #     interface_keys = IFACES.data.keys()
-    #
-    #     for key in interface_keys:
-    #         subinterface = IFACES.data[key]
-    #
-    #         interfaces[0].append(subinterface.description)
-    #         interfaces[1].append(subinterface.name)
-    #         interfaces[2].append(subinterface.ips)
-    #         interfaces[3].append(subinterface.ip)
-    #
-    #     return interfaces

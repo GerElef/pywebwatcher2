@@ -445,14 +445,6 @@ class CMDHandler:
 
                 index += 1
 
-            # for ip in ips[1]:
-            #     if self.INTERFACE_IPV4 == ip:
-            #         found = True
-            #         self.INTERFACE_READABLE = ips[0][index]
-            #         break
-            #
-            #     index += 1
-
             if not found:
                 self.exceptions.append(InvalidFormatException(["valid ipv4 address"], "A valid IPV4 address must be "
                                                                                       "specified. The one currently "

@@ -13,20 +13,6 @@ from user_io.output import Generator
 from user_io.pygameplotter import Engine
 
 
-# def get_interfaces() -> list:
-#     ifaces = Sniffer.get_interface_list()
-#
-#     interfaces = [[], []]
-#     for i in range(len(ifaces[0])):
-#         if ifaces[3][i] is None:
-#             continue
-#
-#         interfaces[0].append(ifaces[0][i])
-#         interfaces[1].append(ifaces[3][i])
-#
-#     return interfaces
-
-
 def get_record_count(dao, date, record_type):
     # e.g. if YYYY was given,
     ts_count = dao.get_timestamp_number_of_records_in(date, record_type)
