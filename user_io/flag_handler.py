@@ -325,7 +325,7 @@ class CMDHandler:
         except Exception as e:
             self.exceptions.append(e)
 
-    def post_processing(self, ips: list):
+    def post_processing(self, interfaces: list, interfaces_ip: list):
 
         if self.RECORDS_FLAG:
             # if the year was provided, the len will be 1, so the
@@ -437,13 +437,21 @@ class CMDHandler:
             found = False
 
             index = 0
-            for ip in ips[1]:
+            for ip in interfaces_ip:
                 if self.INTERFACE_IPV4 == ip:
                     found = True
-                    self.INTERFACE_READABLE = ips[0][index]
+                    self.INTERFACE_READABLE = interfaces[index]
                     break
 
                 index += 1
+
+            # for ip in ips[1]:
+            #     if self.INTERFACE_IPV4 == ip:
+            #         found = True
+            #         self.INTERFACE_READABLE = ips[0][index]
+            #         break
+            #
+            #     index += 1
 
             if not found:
                 self.exceptions.append(InvalidFormatException(["valid ipv4 address"], "A valid IPV4 address must be "
@@ -451,7 +459,7 @@ class CMDHandler:
                                                                                       "provided doesn't match any "
                                                                                       "ip on the system. Valid IPV4s "
                                                                                       "are: "
-                                                                                      f"{ips[1]}"))
+                                                                                      f"{interfaces_ip}"))
 
         if self.SLEEP_TIME < 0:
             self.exceptions.append(

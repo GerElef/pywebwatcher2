@@ -1,6 +1,6 @@
 from math import inf
 
-from scapy.all import sniff, IFACES
+from scapy.all import sniff, get_if_list, get_if_addr, get_if_addr6#, IFACES
 
 from db.dao import Dao
 
@@ -35,17 +35,28 @@ class Sniffer:
 
     # use column 0 for arguments to sniff with scapy i think
     @staticmethod
-    def get_interface_list():
-        interfaces = [[], [], [], []]
+    def get_interface_list() -> list:
+        return get_if_list()
 
-        interface_keys = IFACES.data.keys()
+    @staticmethod
+    def get_interface_ip_list() -> list:
+        ifaces = get_if_list()
 
-        for key in interface_keys:
-            subinterface = IFACES.data[key]
+        ip_list = []
+        for iface in ifaces:
+            ip_list.append(get_if_addr(iface))
 
-            interfaces[0].append(subinterface.description)
-            interfaces[1].append(subinterface.name)
-            interfaces[2].append(subinterface.ips)
-            interfaces[3].append(subinterface.ip)
-
-        return interfaces
+        return ip_list
+    #     interfaces = [[], [], [], []]
+    #
+    #     interface_keys = IFACES.data.keys()
+    #
+    #     for key in interface_keys:
+    #         subinterface = IFACES.data[key]
+    #
+    #         interfaces[0].append(subinterface.description)
+    #         interfaces[1].append(subinterface.name)
+    #         interfaces[2].append(subinterface.ips)
+    #         interfaces[3].append(subinterface.ip)
+    #
+    #     return interfaces

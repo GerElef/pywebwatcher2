@@ -13,18 +13,18 @@ from user_io.output import Generator
 from user_io.pygameplotter import Engine
 
 
-def get_interfaces() -> list:
-    ifaces = Sniffer.get_interface_list()
-
-    interfaces = [[], []]
-    for i in range(len(ifaces[0])):
-        if ifaces[3][i] is None:
-            continue
-
-        interfaces[0].append(ifaces[0][i])
-        interfaces[1].append(ifaces[3][i])
-
-    return interfaces
+# def get_interfaces() -> list:
+#     ifaces = Sniffer.get_interface_list()
+#
+#     interfaces = [[], []]
+#     for i in range(len(ifaces[0])):
+#         if ifaces[3][i] is None:
+#             continue
+#
+#         interfaces[0].append(ifaces[0][i])
+#         interfaces[1].append(ifaces[3][i])
+#
+#     return interfaces
 
 
 def get_record_count(dao, date, record_type):
@@ -50,7 +50,7 @@ def start_sniffer(iface, ifaceipv4, evt, count):
 if __name__ == '__main__':
     handler = CMDHandler()
     handler.parse_sys_args(argv)
-    handler.post_processing(get_interfaces())
+    handler.post_processing(Sniffer.get_interface_list(), Sniffer.get_interface_ip_list())
 
     # if we encounter any exceptions, bail
     if handler.exceptions:

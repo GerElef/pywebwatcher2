@@ -86,7 +86,7 @@ class StabilityTester:
                 scene.add_stamp(self.servers_readable[i], 0)
                 print(f"Encountered unexpected PingError {pe} when pinging {self.servers_readable[i]}")
                 sleep(0.1)
-            except Exception:
+            except Exception as e:
                 # silently pass if our adapter dies or something, we do not care
                 sleep(tts)
 
