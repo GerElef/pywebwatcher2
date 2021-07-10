@@ -1,5 +1,6 @@
 from random import Random
 from time import time, sleep
+from typing import Tuple, List
 
 import pygame
 from pygame.constants import MOUSEBUTTONDOWN
@@ -24,7 +25,7 @@ class PingScene(Scene):
         self.scroll_offset = 0
         self.start_sticky = True
         self.total_stamps = 0
-        self.display_stamps: list[Stamp] = []
+        self.display_stamps: List[Stamp] = []
         self.plot_font = pygame.font.Font(pygame.font.get_default_font(), 14)
 
         self.element_count = element_count
@@ -184,7 +185,7 @@ class PingScene(Scene):
             self.draw_text(screen, curr_stamp.label, line_colour, curr_point, offset_y=text_offset_y)
             pygame.draw.line(screen, line_colour, curr_point, next_point, 2)
 
-    def calc_jump_to_bottom_pos_tuples(self, screen) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+    def calc_jump_to_bottom_pos_tuples(self, screen) -> Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]:
         x_axis_true_w = screen.get_width() - self.MARGIN_W  # this is where the last two points will be on the X axis
         y_axis_true_h = screen.get_height() - self.MARGIN_H  # this is where the last point will be on the Y axis
         y_axis_middle = screen.get_height() // 2  # this is the middle point of the screen (middle point y)
@@ -211,7 +212,7 @@ class PingScene(Scene):
         self.draw_text(screen, f"Dead: {round(100 * (self.dead_counter / temp_total_stamps), 2)}%", self.WHITE,
                        (screen.get_width(), int(self.MARGIN_W / 2)), offset_x=-200)
 
-    def draw_text(self, screen, s: str, colour, pos: tuple[int, int], offset_x: int = 0, offset_y: int = 0):
+    def draw_text(self, screen, s: str, colour, pos: Tuple[int, int], offset_x: int = 0, offset_y: int = 0):
         surface = self.plot_font.render(s, True, colour)
         x = int(pos[0] - surface.get_width() / 2) + offset_x
         y = int(pos[1] - surface.get_height() / 2) + offset_y
@@ -260,7 +261,7 @@ class PingScene(Scene):
                 timestamps = d.get_n_timestamp_records_starting_from(self.total_stamps,
                                                                      interval=self.DB_PULL_INTERVAL)
                 self.total_stamps += self.DB_PULL_INTERVAL
-                stamps: list[Stamp] = []
+                stamps: List[Stamp] = []
                 # convert into stamps
                 for timestamp in timestamps:
                     if timestamp.ms <= 0:

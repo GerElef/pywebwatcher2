@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List, Tuple
 
 import pygame
 from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORESIZE
@@ -37,7 +38,7 @@ class Scene(ABC):
 class Engine:
     tickrate = 30
 
-    def __init__(self, scenes_list: list[Scene], min_width_height: tuple[int, int] = (300, 250),
+    def __init__(self, scenes_list: List[Scene], min_width_height: Tuple[int, int] = (300, 250),
                  start_width=630, start_height=325):
         self.min_width, self.min_height = min_width_height
         self.clock = pygame.time.Clock()

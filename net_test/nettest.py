@@ -1,6 +1,7 @@
 from json import load
 from threading import Event
 from time import sleep
+from typing import List
 
 import ping3
 from errors import PingError, Timeout
@@ -18,10 +19,10 @@ class StabilityTester:
 
     def __init__(self, src_addr: str):
         with open("servers.json", 'r', encoding="utf-8") as file:
-            data: list[list[str], list[str]] = load(file)
+            data: List[List[str], List[str]] = load(file)
 
-        self.servers: list = data[0]
-        self.servers_readable: list = data[1]
+        self.servers: List = data[0]
+        self.servers_readable: List = data[1]
         self.local_history = []
 
         self.db = Dao()

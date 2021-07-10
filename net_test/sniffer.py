@@ -1,4 +1,5 @@
 from math import inf
+from typing import List
 
 from scapy.all import sniff, get_if_list, get_if_addr, get_if_addr6#, IFACES
 
@@ -7,7 +8,7 @@ from db.dao import Dao
 
 # https://scapy.readthedocs.io/en/latest/api/scapy.sendrecv.html
 class Sniffer:
-    IP_FILTER: list = None
+    IP_FILTER: List = None
 
     def __init__(self, interface, readable_interface, evt, packet_count=inf):
         self.interface = interface
@@ -35,11 +36,11 @@ class Sniffer:
 
     # use column 0 for arguments to sniff with scapy i think
     @staticmethod
-    def get_interface_list() -> list:
+    def get_interface_list() -> List:
         return get_if_list()
 
     @staticmethod
-    def get_interface_ip_list() -> list:
+    def get_interface_ip_list() -> List:
         ifaces = get_if_list()
 
         ip_list = []

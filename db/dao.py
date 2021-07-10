@@ -1,5 +1,6 @@
 import datetime
 from calendar import monthrange
+from typing import List
 
 from peewee import SqliteDatabase
 
@@ -78,7 +79,7 @@ class Dao:
         return index
 
     # query for getting M timestamp records skipping past first N records
-    def get_n_timestamp_records_starting_from(self, starting_index: int, interval=1000) -> list[Timeframe]:
+    def get_n_timestamp_records_starting_from(self, starting_index: int, interval=1000) -> List[Timeframe]:
         query = Timeframe.select().order_by(Timeframe.datetime.desc()).limit(interval).offset(starting_index)
 
         frames = []

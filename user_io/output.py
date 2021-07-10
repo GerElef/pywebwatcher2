@@ -109,7 +109,7 @@ class Generator:
         return servers_return
 
     def get_all_data_points_for_ip_server_combo_from_timestamp(self, chunk: List[Timeframe],
-                                                               ip, server) -> Tuple[list, list, int]:
+                                                               ip, server) -> Tuple[List, List, int]:
         data = []
         dates = []
         maxy = 1

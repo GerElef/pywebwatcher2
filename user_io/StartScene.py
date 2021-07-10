@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from time import sleep
+from typing import List
 
 import pygame
 from pygame.constants import MOUSEBUTTONDOWN
@@ -337,21 +338,21 @@ class StartScene(Scene):
     def __init__(self):
         super().__init__()
         # TODO add app_icon_round on the top height and middle width of the screen
-        self.options: list[Option] = [StaticInterface(), DynamicInterfaceToggle(), PingLoopCounter(), PingTimeToSleep(),
+        self.options: List[Option] = [StaticInterface(), DynamicInterfaceToggle(), PingLoopCounter(), PingTimeToSleep(),
                                       SniffToggle(), SnifferIPFilter(), SnifferPacketCounter(), OutputSaveDates(),
                                       OutputSaveLocation(), CSVToggle(), PDFToggle(), GraphToggle(), OnefileToggle(),
                                       VerboseOnefileToggle(), OutputRelaxed(), OutputDataChunk(), AnonToggle(),
                                       PickleToggle()]
-        self.scroll_lines: list[OptionLine] = self.createOptionLines()
+        self.scroll_lines: List[OptionLine] = self.createOptionLines()
         self.x_scroll_offset = 0
         self.PX_STEP_UP = 30
         self.PX_STEP_DOWN = 30
         self.btn_Set = False
 
-    def createOptionLines(self) -> list[OptionLine]:
+    def createOptionLines(self) -> List[OptionLine]:
         GAP_STEP = 30
         ypos = 5
-        scroll_lines: list[OptionLine] = []
+        scroll_lines: List[OptionLine] = []
         for option in self.options:
             cbx = None
             txt_fld = None

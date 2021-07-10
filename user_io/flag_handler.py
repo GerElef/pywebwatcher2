@@ -7,6 +7,7 @@
 # to open pickle files just drag and drop all .p files or pass the files as arguments
 from datetime import datetime, timedelta
 from math import inf
+from typing import List
 
 
 class InvalidParameterError(Exception):
@@ -34,7 +35,7 @@ class InvalidLengthError(InvalidParameterError):
 
 
 class InvalidFormatException(Exception):
-    def __init__(self, args_404: list, description: str):
+    def __init__(self, args_404: List, description: str):
         self.args_404 = args_404
         self.desc = description
 
@@ -127,7 +128,7 @@ class CMDHandler:
         self.pickles = []
         self.exceptions = []
 
-    def arg_has_value(self, arg: str, arg_index: int, argl: list,
+    def arg_has_value(self, arg: str, arg_index: int, argl: List,
                       offset: int = 1, type_check: type = None, val_check=None):
         if arg_index + offset < len(argl):
             val = argl[arg_index + offset]
@@ -162,7 +163,7 @@ class CMDHandler:
         return True
 
     # noinspection PyTypeChecker
-    def convert_list_datetime(self, date_val_list: list[int], flag: str):
+    def convert_list_datetime(self, date_val_list: List[int], flag: str):
 
         def destructor(y=1, mm=1, d=1, h=0, m=0, s=0):
             return datetime(int(y), int(mm), int(d), int(h), int(m), int(s), 000)
@@ -178,7 +179,7 @@ class CMDHandler:
 
         return date
 
-    def parse_sys_args(self, argv: list):
+    def parse_sys_args(self, argv: List):
         def int_check(x):
             return int(x) > 0
 
@@ -325,7 +326,7 @@ class CMDHandler:
         except Exception as e:
             self.exceptions.append(e)
 
-    def post_processing(self, interfaces: list, interfaces_ip: list):
+    def post_processing(self, interfaces: List, interfaces_ip: List):
 
         if self.RECORDS_FLAG:
             # if the year was provided, the len will be 1, so the
