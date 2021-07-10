@@ -6,7 +6,13 @@ from pygame.locals import RESIZABLE, QUIT, K_ESCAPE, K_LSHIFT, K_RSHIFT, VIDEORE
 
 
 pygame.mixer.pre_init(44100, -16, 2, 2048)
-pygame.mixer.init()
+try:
+    pygame.mixer.init()
+    #ubuntu 20.04
+    #pygame.error: ALSA: Couldn't open audio device: No such file or directory
+except Exception as e:
+    print(e)
+
 pygame.font.init()
 pygame.init()
 
